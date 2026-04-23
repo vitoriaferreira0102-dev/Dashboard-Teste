@@ -119,83 +119,88 @@ window.excluirConta = async function(docId, nomeConta) {
 };
 
 // 4. O Ouvinte que atualiza TUDO ao mesmo tempo (Contas)
-onSnapshot(carteirasRef, (snapshot) => {
-    const selectConta = document.getElementById('conta');
-    const selectFiltroConta = document.getElementById('filtro-conta'); 
-    const listaModal = document.getElementById('lista-contas');
-    
-    // LIMPEZA TOTAL ANTES DE PREENCHER
-    if (selectConta) selectConta.innerHTML = '<option value="" disabled selected>Selecione a conta...</option>';
-    if (selectFiltroConta) selectFiltroConta.innerHTML = '<option value="todas">Todas as Contas</option>';
-    if (listaModal) listaModal.innerHTML = ''; 
-    
-    let temConta = false;
-    coresContas = {}; 
+// 4. O Ouvinte que atualiza TUDO ao mesmo tempo (Contas)
+let ouvinteContas = null;
 
-    // PASSO 1: Puxa do banco e coloca numa lista temporária para podermos organizar
-    let listaDeContas = [];
-    snapshot.forEach((docSnap) => {
-        listaDeContas.push({ id: docSnap.id, ...docSnap.data() });
-    });
+function iniciarOuvinteContas() {
+    if (ouvinteContas) ouvinteContas(); // Limpa se já existir, para não duplicar
 
-    // PASSO 2: Ordena matematicamente pelo carimbo 'ordem' (Quem for novo vai pro final: 9999)
-    listaDeContas.sort((a, b) => (a.ordem ?? 9999) - (b.ordem ?? 9999));
-
-    // PASSO 3: Desenha tudo na tela, agora na ordem rigorosa
-    listaDeContas.forEach((carteira) => {
-        const docId = carteira.id; 
-        const corDaConta = carteira.cor || '#b2bec3';
+    ouvinteContas = onSnapshot(carteirasRef, (snapshot) => {
+        const selectConta = document.getElementById('conta');
+        const selectFiltroConta = document.getElementById('filtro-conta'); 
+        const listaModal = document.getElementById('lista-contas');
         
-        if (selectConta) selectConta.innerHTML += `<option value="${carteira.nome}" style="color: ${corDaConta}; font-weight: 600;">${carteira.nome}</option>`;
-        if (selectFiltroConta) selectFiltroConta.innerHTML += `<option value="${carteira.nome}">${carteira.nome}</option>`;
+        // LIMPEZA TOTAL ANTES DE PREENCHER
+        if (selectConta) selectConta.innerHTML = '<option value="" disabled selected>Selecione a conta...</option>';
+        if (selectFiltroConta) selectFiltroConta.innerHTML = '<option value="todas">Todas as Contas</option>';
+        if (listaModal) listaModal.innerHTML = ''; 
         
-        if (listaModal) {
-            listaModal.innerHTML += `
-                <li class="item-categoria drag-item" data-nome="${carteira.nome}" data-id="${docId}">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <i class="fa-solid fa-grip-lines drag-handle" style="cursor: grab; color: #dfe6e9; padding: 5px 10px; font-size: 16px; transition: 0.2s;" title="Arraste para reordenar"></i>
-                        <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background-color: ${corDaConta};"></span>
-                        <span style="color: var(--texto); font-weight: 500; font-size: 14px;">${carteira.nome}</span>
-                    </div>
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <i class="fa-solid fa-pen" style="color: #0984e3; cursor: pointer; padding: 5px;" onclick="prepararEdicaoConta('${docId}', '${carteira.nome}', '${corDaConta}')" title="Editar"></i>
-                        <button class="btn-del-cat" onclick="excluirConta('${docId}', '${carteira.nome}')" title="Excluir" style="background: transparent; border: none; margin: 0; padding: 0;"><i class="fa-solid fa-trash" style="color: #ff7675; cursor: pointer; padding: 5px;"></i></button>
-                    </div>
-                </li>
-            `;
-        }
-        coresContas[carteira.nome] = corDaConta; 
-        temConta = true;
-    });
+        let temConta = false;
+        coresContas = {}; 
 
-    if (!temConta && selectConta) {
-        selectConta.innerHTML = '<option value="" disabled selected>Clique no + para criar uma conta</option>';
-        if (listaModal) listaModal.innerHTML = '<div style="text-align: center; color: var(--texto-secundario); padding: 20px;">Nenhuma conta cadastrada.</div>';
-    } else if (typeof ultimaContaAdicionada !== 'undefined' && ultimaContaAdicionada && selectConta) {
-        selectConta.value = ultimaContaAdicionada;
-    }
-    
-    atualizarCorDaConta();
-
-    // PASSO 4: A Mágica de Salvar a Ordem no Firebase
-    if (listaModal) {
-        if (sortableContasInstance) sortableContasInstance.destroy(); 
-        sortableContasInstance = new Sortable(listaModal, {
-            animation: 150, handle: '.drag-handle', filter: '.fixed-item',
-            onEnd: function () {
-                // Quando o usuário soltar o arraste, o sistema varre a lista e avisa o Firebase
-                const itensNaTela = document.querySelectorAll('#lista-contas .item-categoria');
-                itensNaTela.forEach((li, index) => {
-                    const docId = li.getAttribute('data-id');
-                    // Carimba a nova posição (0, 1, 2...) direto no documento da nuvem
-                    updateDoc(doc(db, nomeColecaoCarteiras, docId), { ordem: index });
-                });
-            }
+        // PASSO 1: Puxa do banco e coloca numa lista temporária para podermos organizar
+        let listaDeContas = [];
+        snapshot.forEach((docSnap) => {
+            listaDeContas.push({ id: docSnap.id, ...docSnap.data() });
         });
-    }
 
-    atualizarTela();
-});
+        // PASSO 2: Ordena matematicamente pelo carimbo 'ordem' (Quem for novo vai pro final: 9999)
+        listaDeContas.sort((a, b) => (a.ordem ?? 9999) - (b.ordem ?? 9999));
+
+        // PASSO 3: Desenha tudo na tela, agora na ordem rigorosa
+        listaDeContas.forEach((carteira) => {
+            const docId = carteira.id; 
+            const corDaConta = carteira.cor || '#b2bec3';
+            
+            if (selectConta) selectConta.innerHTML += `<option value="${carteira.nome}" style="color: ${corDaConta}; font-weight: 600;">${carteira.nome}</option>`;
+            if (selectFiltroConta) selectFiltroConta.innerHTML += `<option value="${carteira.nome}">${carteira.nome}</option>`;
+            
+            if (listaModal) {
+                listaModal.innerHTML += `
+                    <li class="item-categoria drag-item" data-nome="${carteira.nome}" data-id="${docId}">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-grip-lines drag-handle" style="cursor: grab; color: #dfe6e9; padding: 5px 10px; font-size: 16px; transition: 0.2s;" title="Arraste para reordenar"></i>
+                            <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background-color: ${corDaConta};"></span>
+                            <span style="color: var(--texto); font-weight: 500; font-size: 14px;">${carteira.nome}</span>
+                        </div>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <i class="fa-solid fa-pen" style="color: #0984e3; cursor: pointer; padding: 5px;" onclick="prepararEdicaoConta('${docId}', '${carteira.nome}', '${corDaConta}')" title="Editar"></i>
+                            <button class="btn-del-cat" onclick="excluirConta('${docId}', '${carteira.nome}')" title="Excluir" style="background: transparent; border: none; margin: 0; padding: 0;"><i class="fa-solid fa-trash" style="color: #ff7675; cursor: pointer; padding: 5px;"></i></button>
+                        </div>
+                    </li>
+                `;
+            }
+            coresContas[carteira.nome] = corDaConta; 
+            temConta = true;
+        });
+
+        if (!temConta && selectConta) {
+            selectConta.innerHTML = '<option value="" disabled selected>Clique no + para criar uma conta</option>';
+            if (listaModal) listaModal.innerHTML = '<div style="text-align: center; color: var(--texto-secundario); padding: 20px;">Nenhuma conta cadastrada.</div>';
+        } else if (typeof ultimaContaAdicionada !== 'undefined' && ultimaContaAdicionada && selectConta) {
+            selectConta.value = ultimaContaAdicionada;
+        }
+        
+        atualizarCorDaConta();
+
+        // PASSO 4: A Mágica de Salvar a Ordem no Firebase
+        if (listaModal) {
+            if (sortableContasInstance) sortableContasInstance.destroy(); 
+            sortableContasInstance = new Sortable(listaModal, {
+                animation: 150, handle: '.drag-handle', filter: '.fixed-item',
+                onEnd: function () {
+                    const itensNaTela = document.querySelectorAll('#lista-contas .item-categoria');
+                    itensNaTela.forEach((li, index) => {
+                        const docId = li.getAttribute('data-id');
+                        updateDoc(doc(db, nomeColecaoCarteiras, docId), { ordem: index });
+                    });
+                }
+            });
+        }
+
+        atualizarTela();
+    });
+}
 // --- 1.1. GESTÃO DO TEMA CLARO/ESCURO ---
 const temaSalvo = localStorage.getItem('temaDashboard');
 if (temaSalvo === 'dark' || (!temaSalvo && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -335,92 +340,98 @@ function atualizarProgressoMeta(faturamentoTotal) {
 let sortableInstance = null;
 
 // 1. Ouvinte em Tempo Real das Categorias na Nuvem
-onSnapshot(categoriasRef, (snapshot) => {
-    const selectForm = document.getElementById('categoria');
-    const selectFiltro = document.getElementById('filtro-categoria');
-    const listaModal = document.getElementById('lista-categorias-modal') || document.getElementById('lista-categorias'); 
+let ouvinteCategorias = null;
+function iniciarOuvinteCategorias() {
+    if (ouvinteCategorias) ouvinteCategorias(); // Limpa se já existir
+    ouvinteCategorias = onSnapshot(categoriasRef, (snapshot) => {
+        onSnapshot(categoriasRef, (snapshot) => {
+            const selectForm = document.getElementById('categoria');
+            const selectFiltro = document.getElementById('filtro-categoria');
+            const listaModal = document.getElementById('lista-categorias-modal') || document.getElementById('lista-categorias'); 
 
-    const categoriaSelecionadaAntes = selectForm ? selectForm.value : 'Geral';
+            const categoriaSelecionadaAntes = selectForm ? selectForm.value : 'Geral';
 
-    // Zera as variáveis para reconstruir com dados frescos da nuvem
-    categorias = ['Geral'];
-    coresCategorias = { 'Geral': '#b2bec3' };
+            // Zera as variáveis para reconstruir com dados frescos da nuvem
+            categorias = ['Geral'];
+            coresCategorias = { 'Geral': '#b2bec3' };
 
-    if (selectForm) selectForm.innerHTML = '';
-    if (selectFiltro) selectFiltro.innerHTML = '<option value="todas">Todas as Categorias</option>';
-    if (listaModal) listaModal.innerHTML = '';
+            if (selectForm) selectForm.innerHTML = '';
+            if (selectFiltro) selectFiltro.innerHTML = '<option value="todas">Todas as Categorias</option>';
+            if (listaModal) listaModal.innerHTML = '';
 
-    // A. Carrega as categorias do Firebase
-    snapshot.forEach((docSnap) => {
-        const cat = docSnap.data();
-        const id = docSnap.id;
-        
-        if(cat.nome !== 'Geral' && !categorias.includes(cat.nome)) {
-            categorias.push(cat.nome);
-            coresCategorias[cat.nome] = cat.cor || '#b2bec3';
-        }
-        // Guarda o ID do Firebase escondido para podermos editar/excluir depois
-        coresCategorias[cat.nome + '_id'] = id; 
-    });
+            // A. Carrega as categorias do Firebase
+            snapshot.forEach((docSnap) => {
+                const cat = docSnap.data();
+                const id = docSnap.id;
+                
+                if(cat.nome !== 'Geral' && !categorias.includes(cat.nome)) {
+                    categorias.push(cat.nome);
+                    coresCategorias[cat.nome] = cat.cor || '#b2bec3';
+                }
+                // Guarda o ID do Firebase escondido para podermos editar/excluir depois
+                coresCategorias[cat.nome + '_id'] = id; 
+            });
 
-    // B. Renderiza tudo na tela
-    categorias.forEach((cat) => {
-        let corDaCategoria = coresCategorias[cat];
-        let idDoBanco = coresCategorias[cat + '_id']; 
+            // B. Renderiza tudo na tela
+            categorias.forEach((cat) => {
+                let corDaCategoria = coresCategorias[cat];
+                let idDoBanco = coresCategorias[cat + '_id']; 
 
-        // Injeta nos selects (Com a cor no texto!)
-        if (selectForm) selectForm.innerHTML += `<option value="${cat}" style="color: ${corDaCategoria}; font-weight: 600;">${cat}</option>`;
-        if (selectFiltro) selectFiltro.innerHTML += `<option value="${cat}">${cat}</option>`;
-        
-        let htmlBolinhaColorida = `<span style="width: 12px; height: 12px; border-radius: 50%; background-color: ${corDaCategoria}; display: inline-block;"></span>`;
+                // Injeta nos selects (Com a cor no texto!)
+                if (selectForm) selectForm.innerHTML += `<option value="${cat}" style="color: ${corDaCategoria}; font-weight: 600;">${cat}</option>`;
+                if (selectFiltro) selectFiltro.innerHTML += `<option value="${cat}">${cat}</option>`;
+                
+                let htmlBolinhaColorida = `<span style="width: 12px; height: 12px; border-radius: 50%; background-color: ${corDaCategoria}; display: inline-block;"></span>`;
 
-        // Injeta no Modal
-        if (listaModal) {
-            if (cat !== 'Geral') {
-                listaModal.innerHTML += `
-                    <li class="item-categoria drag-item" data-nome="${cat}" data-id="${idDoBanco}">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fa-solid fa-grip-lines drag-handle" title="Arraste para reordenar" style="cursor: grab; color: #dfe6e9; padding: 5px 10px; font-size: 16px;"></i>
-                            ${htmlBolinhaColorida}
-                            <span style="font-weight: 500; color: var(--texto);">${cat}</span>
-                        </div>
-                        <div style="display: flex; gap: 15px; align-items: center;">
-                            <i class="fa-solid fa-pen" style="color: #0984e3; cursor: pointer; padding: 5px;" onclick="prepararEdicaoCategoria('${idDoBanco}', '${cat}', '${corDaCategoria}')" title="Editar"></i>
-                            <button class="btn-del-cat" onclick="removerCategoria('${idDoBanco}', '${cat}')" title="Excluir" style="background: transparent; border: none; margin: 0; padding: 0;"><i class="fa-solid fa-trash" style="color: #ff7675; cursor: pointer; padding: 5px;"></i></button>
-                        </div>
-                    </li>
-                `;
-            } else {
-                listaModal.innerHTML += `
-                    <li class="item-categoria fixed-item" data-nome="${cat}">
-                        <div style="display: flex; align-items: center; gap: 10px; padding-left: 26px;">
-                            ${htmlBolinhaColorida}
-                            <span style="font-weight: 500; color: var(--texto);">${cat}</span>
-                        </div>
-                        <span style="color: var(--texto-secundario); font-size: 12px; margin-right: 10px;">(Padrão Fixo)</span>
-                    </li>
-                `;
+                // Injeta no Modal
+                if (listaModal) {
+                    if (cat !== 'Geral') {
+                        listaModal.innerHTML += `
+                            <li class="item-categoria drag-item" data-nome="${cat}" data-id="${idDoBanco}">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fa-solid fa-grip-lines drag-handle" title="Arraste para reordenar" style="cursor: grab; color: #dfe6e9; padding: 5px 10px; font-size: 16px;"></i>
+                                    ${htmlBolinhaColorida}
+                                    <span style="font-weight: 500; color: var(--texto);">${cat}</span>
+                                </div>
+                                <div style="display: flex; gap: 15px; align-items: center;">
+                                    <i class="fa-solid fa-pen" style="color: #0984e3; cursor: pointer; padding: 5px;" onclick="prepararEdicaoCategoria('${idDoBanco}', '${cat}', '${corDaCategoria}')" title="Editar"></i>
+                                    <button class="btn-del-cat" onclick="removerCategoria('${idDoBanco}', '${cat}')" title="Excluir" style="background: transparent; border: none; margin: 0; padding: 0;"><i class="fa-solid fa-trash" style="color: #ff7675; cursor: pointer; padding: 5px;"></i></button>
+                                </div>
+                            </li>
+                        `;
+                    } else {
+                        listaModal.innerHTML += `
+                            <li class="item-categoria fixed-item" data-nome="${cat}">
+                                <div style="display: flex; align-items: center; gap: 10px; padding-left: 26px;">
+                                    ${htmlBolinhaColorida}
+                                    <span style="font-weight: 500; color: var(--texto);">${cat}</span>
+                                </div>
+                                <span style="color: var(--texto-secundario); font-size: 12px; margin-right: 10px;">(Padrão Fixo)</span>
+                            </li>
+                        `;
+                    }
+                }
+            });
+
+            // Devolve a seleção que o usuário estava usando
+            if (selectForm && categorias.includes(categoriaSelecionadaAntes)) {
+                selectForm.value = categoriaSelecionadaAntes;
             }
-        }
-    });
+            
+            if (typeof atualizarCorDaCaixaDeSelecao === 'function') atualizarCorDaCaixaDeSelecao(); 
 
-    // Devolve a seleção que o usuário estava usando
-    if (selectForm && categorias.includes(categoriaSelecionadaAntes)) {
-        selectForm.value = categoriaSelecionadaAntes;
-    }
-    
-    if (typeof atualizarCorDaCaixaDeSelecao === 'function') atualizarCorDaCaixaDeSelecao(); 
-
-    if (listaModal) {
-        if (sortableInstance) sortableInstance.destroy(); 
-        sortableInstance = new Sortable(listaModal, {
-            animation: 150, handle: '.drag-handle', filter: '.fixed-item'
+            if (listaModal) {
+                if (sortableInstance) sortableInstance.destroy(); 
+                sortableInstance = new Sortable(listaModal, {
+                    animation: 150, handle: '.drag-handle', filter: '.fixed-item'
+                });
+            }
+            
+            // Atualiza os gráficos com as novas cores
+            atualizarTela();
         });
-    }
-    
-    // Atualiza os gráficos com as novas cores
-    atualizarTela();
-});
+    });
+}
 
 function abrirModal() { document.getElementById('modal-categorias').style.display = 'flex'; }
 function fecharModal() { 
@@ -766,6 +777,8 @@ let unsubscribeSnapshot = null;
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        iniciarOuvinteContas();
+        iniciarOuvinteCategorias();
         if (overlayLogin) overlayLogin.style.display = 'none';
 
         // 1. LÓGICA DO NOME (BEM-VINDO)
