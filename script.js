@@ -121,10 +121,10 @@ window.excluirConta = async function(docId, nomeConta) {
 // 4. O Ouvinte que atualiza TUDO ao mesmo tempo (Contas)
 onSnapshot(carteirasRef, (snapshot) => {
     const selectConta = document.getElementById('conta');
-    const selectFiltroConta = document.getElementById('filtro-conta'); // Pega o filtro da tabela
+    const selectFiltroConta = document.getElementById('filtro-conta'); 
     const listaModal = document.getElementById('lista-contas');
     
-    // LIMPEZA TOTAL ANTES DE PREENCHER (Resolve o Bug da Multiplicação)
+    // LIMPEZA TOTAL ANTES DE PREENCHER
     if (selectConta) selectConta.innerHTML = '<option value="" disabled selected>Selecione a conta...</option>';
     if (selectFiltroConta) selectFiltroConta.innerHTML = '<option value="todas">Todas as Contas</option>';
     if (listaModal) listaModal.innerHTML = ''; 
@@ -132,9 +132,18 @@ onSnapshot(carteirasRef, (snapshot) => {
     let temConta = false;
     coresContas = {}; 
 
+    // PASSO 1: Puxa do banco e coloca numa lista temporária para podermos organizar
+    let listaDeContas = [];
     snapshot.forEach((docSnap) => {
-        const carteira = docSnap.data();
-        const docId = docSnap.id; 
+        listaDeContas.push({ id: docSnap.id, ...docSnap.data() });
+    });
+
+    // PASSO 2: Ordena matematicamente pelo carimbo 'ordem' (Quem for novo vai pro final: 9999)
+    listaDeContas.sort((a, b) => (a.ordem ?? 9999) - (b.ordem ?? 9999));
+
+    // PASSO 3: Desenha tudo na tela, agora na ordem rigorosa
+    listaDeContas.forEach((carteira) => {
+        const docId = carteira.id; 
         const corDaConta = carteira.cor || '#b2bec3';
         
         if (selectConta) selectConta.innerHTML += `<option value="${carteira.nome}" style="color: ${corDaConta}; font-weight: 600;">${carteira.nome}</option>`;
@@ -168,17 +177,25 @@ onSnapshot(carteirasRef, (snapshot) => {
     
     atualizarCorDaConta();
 
+    // PASSO 4: A Mágica de Salvar a Ordem no Firebase
     if (listaModal) {
         if (sortableContasInstance) sortableContasInstance.destroy(); 
         sortableContasInstance = new Sortable(listaModal, {
-            animation: 150, handle: '.drag-handle', filter: '.fixed-item'
+            animation: 150, handle: '.drag-handle', filter: '.fixed-item',
+            onEnd: function () {
+                // Quando o usuário soltar o arraste, o sistema varre a lista e avisa o Firebase
+                const itensNaTela = document.querySelectorAll('#lista-contas .item-categoria');
+                itensNaTela.forEach((li, index) => {
+                    const docId = li.getAttribute('data-id');
+                    // Carimba a nova posição (0, 1, 2...) direto no documento da nuvem
+                    updateDoc(doc(db, nomeColecaoCarteiras, docId), { ordem: index });
+                });
+            }
         });
     }
 
-    // ATUALIZA OS CARTÕES E A TABELA NA MESMA HORA (Resolve o Bug do Cartão Invisível)
     atualizarTela();
 });
-
 // --- 1.1. GESTÃO DO TEMA CLARO/ESCURO ---
 const temaSalvo = localStorage.getItem('temaDashboard');
 if (temaSalvo === 'dark' || (!temaSalvo && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -1273,31 +1290,62 @@ function exportarDados() {
     a.click();
 }
 
-function importarDados(event) {
+async function importarDados(event) {
     const arquivo = event.target.files[0];
     if (!arquivo) return;
 
     const leitor = new FileReader();
-    leitor.onload = function(e) {
+    leitor.onload = async function(e) {
         try {
             const dados = JSON.parse(e.target.result);
-            if (confirm("Isso irá substituir todos os dados atuais. Deseja continuar?")) {
-                transacoes = dados.transacoes || [];
-                categorias = dados.categorias || [];
-                coresCategorias = dados.cores || {};
-                metaNome = dados.meta?.nome || 'Meta do Período';
-                metaFinanceira = dados.meta?.valor || 0;
+            
+            if (confirm("Isso irá ADICIONAR os dados do arquivo ao seu banco de dados na nuvem. Deseja continuar?")) {
+                const btnStatus = event.target.parentElement; // Para dar feedback visual
+                const textoOriginal = btnStatus.innerHTML;
+                btnStatus.innerText = "Importando para Nuvem...";
 
-                localStorage.setItem('bancoDashboard', JSON.stringify(transacoes));
-                localStorage.setItem('categoriasDashboard', JSON.stringify(categorias));
-                localStorage.setItem('coresDashboardCores', JSON.stringify(coresCategorias));
-                localStorage.setItem('metaNome', metaNome);
-                localStorage.setItem('metaFinanceira', metaFinanceira);
+                // 1. IMPORTAR CATEGORIAS
+                if (dados.categorias && Array.isArray(dados.categorias)) {
+                    for (const catNome of dados.categorias) {
+                        // Verifica se é uma categoria nova (não Geral)
+                        if (catNome !== 'Geral') {
+                            const cor = dados.cores ? dados.cores[catNome] : '#b2bec3';
+                            await addDoc(categoriasRef, {
+                                nome: catNome,
+                                cor: cor,
+                                criadoEm: Date.now(),
+                                userId: auth.currentUser.uid
+                            });
+                        }
+                    }
+                }
 
-                location.reload(); // Recarrega para aplicar tudo
+                // 2. IMPORTAR TRANSAÇÕES
+                if (dados.transacoes && Array.isArray(dados.transacoes)) {
+                    for (const t of dados.transacoes) {
+                        // Criamos um novo objeto limpando IDs antigos para não dar conflito
+                        const novaTransacao = {
+                            descricao: t.descricao,
+                            valor: t.valor,
+                            tipo: t.tipo,
+                            data: t.data,
+                            categoria: t.categoria,
+                            conta: t.conta || "Sem Conta",
+                            status: t.status || "pago",
+                            nomeUsuario: t.nomeUsuario || auth.currentUser.displayName,
+                            userId: auth.currentUser.uid,
+                            timestamp: t.timestamp || Date.now()
+                        };
+                        await addDoc(transacoesRef, novaTransacao);
+                    }
+                }
+
+                alert("Importação concluída com sucesso! Os dados agora estão na nuvem.");
+                location.reload(); 
             }
         } catch (err) {
-            alert("Erro ao ler o arquivo de backup.");
+            console.error("Erro na importação:", err);
+            alert("Erro ao ler o arquivo. Certifique-se de que é um JSON válido gerado pelo sistema.");
         }
     };
     leitor.readAsText(arquivo);
