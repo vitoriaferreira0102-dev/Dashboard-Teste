@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard Financeiro</title>
+
+    <meta name="theme-color" content="#00b894">
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <div id="login-overlay" style="display: flex; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--fundo); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+        <div style="background: var(--cartao); padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; max-width: 350px; width: 90%;">
+            <i class="fa-solid fa-vault" style="font-size: 40px; color: var(--cor-primaria); margin-bottom: 20px;"></i>
+            <h2 style="margin-bottom: 25px; color: var(--texto);">BEM VINDO</h2>
+            
+            <form id="form-login" style="display: flex; flex-direction: column; gap: 15px;">
+                <input type="email" id="email-login" placeholder="E-mail" required style="padding: 12px; border-radius: 10px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
+                <input type="password" id="senha-login" placeholder="Senha" required style="padding: 12px; border-radius: 10px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
+                <button type="submit" style="padding: 12px; border-radius: 10px; background: var(--gradiente-btn); color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 10px;">Entrar no Sistema</button>
+            </form>
+            <p id="msg-erro-login" style="color: var(--cor-alerta); font-size: 13px; margin-top: 15px; display: none;">Credenciais inválidas.</p>
+        </div>
+    </div>
+    <div class="dashboard-container">
+        <div id="area-admin" style="display: none; background: var(--cartao); padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid var(--cor-primaria);">
+            <h3 style="color: var(--texto); margin-bottom: 15px;"><i class="fa-solid fa-user-shield"></i> Gestão de Acessos</h3>
+            <form id="form-cadastro-admin" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="email" id="novo-email-admin" placeholder="E-mail do novo usuário" required style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
+                <input type="password" id="nova-senha-admin" placeholder="Senha inicial" required style="padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
+                <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: var(--gradiente-btn); color: white; border: none; cursor: pointer; font-weight: bold;">Cadastrar Operador</button>
+            </form>
+            <p id="msg-sucesso-admin" style="color: var(--cor-primaria); font-size: 13px; margin-top: 10px; display: none;">Usuário cadastrado com sucesso!</p>
+        </div>
+        <div class="top-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="color: var(--texto);">Painel de Controle Financeiro</h2>
+            
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <span id="saudacao-usuario" style="color: var(--texto); font-weight: 600; font-size: 15px; border-right: 2px solid #dfe6e9; padding-right: 15px;"></span>
+                
+                <button id="theme-toggle" onclick="toggleTheme()" title="Mudar Tema" style="background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--texto); transition: 0.3s;">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <button id="btn-logout" onclick="fazerLogout()" title="Sair do Sistema" style="background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--cor-alerta); transition: 0.3s;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px;">
+            <h2 style="margin: 0; font-size: 18px; color: var(--texto); font-weight: 700;">Minhas Contas</h2>
+            <button id="btn-ocultar-saldos" onclick="toggleSaldos()" style="background: transparent; border: none; color: var(--texto-secundario); font-size: 18px; cursor: pointer; transition: 0.3s;" title="Ocultar/Mostrar Valores">
+                <i class="fa-solid fa-eye"></i>
+            </button>
+        </div>
+
+        <div id="carrossel-contas" class="carrossel-contas">
+            </div>
+
+
+        <div class="resumo-grid">
+            <div class="card">
+                <h3>Receitas</h3>
+                <div class="valor receita" id="total-receita">R$ 0,00</div>
+            </div>
+            <div class="card">
+                <h3>Despesas</h3>
+                <div class="valor despesa" id="total-despesa">R$ 0,00</div>
+            </div>
+            <div class="card">
+                <h3>Lucro Líquido</h3>
+                <div class="valor" id="lucro-liquido">R$ 0,00</div>
+            </div>
+            <div class="card meta-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 id="nome-meta-display">Meta do Período</h3> <button onclick="definirMeta()" class="btn-meta-edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </div>
+                <div class="valor" id="display-meta">R$ 0,00</div>
+                <div class="container-barra">
+                    <div id="barra-progresso" class="progresso-fill"></div>
+                </div>
+                <div id="texto-progresso" style="font-size: 12px; color: #636e72; margin-top: 5px;">0% atingido</div>
+            </div>
+        </div>
+
+        <div class="meio-grid">
+            <div class="form-container">
+                <div style="margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Novo Lançamento</h3>
+                </div>
+                <form id="form-transacao">
+                    <input type="text" id="descricao" placeholder="Descrição (ex: Corrida, Venda)" required>
+                    <input type="number" id="valor" placeholder="Valor (R$)" step="0.01" required>
+                    <input type="date" id="data" required>
+
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="conta" onchange="atualizarCorDaConta()" style="flex: 1; margin-bottom: 0; border: 1px solid #dfe6e9; border-left: 5px solid #b2bec3; border-radius: 8px; padding: 12px; cursor: pointer; color: var(--texto);">
+                                <option value="" disabled selected>Carregando contas...</option>
+                            </select>
+                            
+                            <button type="button" id="btn-abrir-modal-conta" style="background: var(--gradiente-btn); color: white; border: none; width: 48px; min-width: 48px; height: 50px; border-radius: 10px; cursor: pointer; font-weight: bold; flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center;" title="Organizar Bancos">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="categoria" required onchange="atualizarCorDaCaixaDeSelecao()" style="flex: 1; margin-bottom: 0; border: 1px solid #dfe6e9; border-left: 5px solid var(--cor-primaria); border-radius: 8px; padding: 12px; cursor: pointer; color: var(--texto);">
+                            </select>
+                            
+                            <button type="button" onclick="abrirModal()" style="background: var(--gradiente-btn); color: white; border: none; width: 48px; min-width: 48px; height: 46px; border-radius: 10px; cursor: pointer; font-weight: bold; flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center;" title="Organizar Categorias">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <select id="tipo" required style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #dfe6e9; color: var(--texto);">
+                        <option value="receita">Receita (Entrada)</option>
+                        <option value="despesa">Despesa (Saída)</option>
+                    </select>
+
+                    <select id="status-lancamento" required style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #dfe6e9;  color: var(--texto);">
+                        <option value="pago">✅ Pago / Recebido</option>
+                        <option value="pendente">⏳ Pendente (A Pagar/Receber)</option>
+                        <option value="cancelado">❌ Cancelado</option>
+                    </select>
+                    <div style="background: var(--fundo); border: 1px dashed #b2bec3; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center; transition: 0.3s;" id="area-upload">
+                        <input type="hidden" id="url-comprovante" value="">
+                        
+                        <div id="preview-comprovante" style="display: none; position: relative; margin-bottom: 10px;">
+                            <img id="img-preview" src="" alt="Comprovante" style="max-width: 100%; max-height: 150px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <button type="button" onclick="removerAnexo()" style="position: absolute; top: -10px; right: -10px; background: var(--cor-alerta); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; box-shadow: none; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-times"></i></button>
+                        </div>
+
+                        <div id="botoes-upload" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <label for="arquivo-upload" style="flex: 1; background: var(--cartao); border: 1px solid #dfe6e9; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--texto); display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+                                <i class="fa-solid fa-paperclip"></i> Anexar
+                            </label>
+                            <input type="file" id="arquivo-upload" accept="image/*" style="display: none;" onchange="uploadTradicional(event)">
+                            
+                            <button type="button" onclick="abrirModalQR()" style="flex: 1; background: #000; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: none; margin: 0;">
+                                <i class="fa-solid fa-qrcode"></i> Pelo Celular
+                            </button>
+                        </div>
+                        <div id="upload-status" style="font-size: 11px; color: #636e72; margin-top: 10px; display: none;">Enviando...</div>
+                    </div>
+                    <button type="submit" id="btn-salvar-transacao" style="width: 100%; padding: 12px 15px; margin-bottom: 12px; border: 1px solid #edf2f7; border-radius: 10px; box-sizing: border-box; background-color: #f8f9fa; font-family: 'Poppins', sans-serif; transition: 0.3s;">Adicionar</button>
+                </form>
+            </div>
+
+           <div class="graficos-wrapper">
+                <div class="grafico-box">
+                    <canvas id="meuGrafico"></canvas>
+                </div>
+                <div class="grafico-box">
+                    <canvas id="graficoBarras"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabela-container">
+            <div class="tabela-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 2px solid var(--fundo); padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="margin: 0;" id="titulo-historico">Histórico Recente</h3>
+                    
+                    <div id="grupo-botoes" style="display: flex; gap: 10px;">
+                        <button onclick="exportarExcel()" class="btn-secundario" title="Exportar para Excel" style="color: #27ae60;"><i class="fa-solid fa-file-excel"></i></button>
+                        <button onclick="exportarDados()" class="btn-secundario" title="Baixar Backup JSON"><i class="fa-solid fa-download"></i></button>
+                        <button onclick="document.getElementById('input-import').click()" class="btn-secundario" title="Restaurar Backup"><i class="fa-solid fa-upload"></i></button>
+                        <input type="file" id="input-import" style="display: none;" onchange="importarDados(event)">
+                        <button onclick="gerarPDF()" class="btn-pdf"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
+                    </div>
+                </div>
+    
+                    <div class="filtro-area" style="display: flex; flex-direction: column; width: 100%; background: var(--cartao); padding: 25px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; overflow: hidden; border: 1px solid rgba(150, 150, 150, 0.1);">
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; width: 100%;">
+                            <div class="campo-filtro">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tipo</label>
+                                <select id="filtro-tipo" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                                    <option value="todos">Todos os Tipos</option>
+                                    <option value="receita">Receitas</option>
+                                    <option value="despesa">Despesas</option>
+                                </select>
+                            </div>
+
+                            <div class="campo-filtro">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Status</label>
+                                <select id="filtro-status" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                                    <option value="todos">Todos os Status</option>
+                                    <option value="pago">Pago / Recebido</option>
+                                    <option value="pendente">Pendente</option>
+                                    <option value="cancelado">Cancelado</option>
+                                </select>
+                            </div>
+
+                            <div class="campo-filtro">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Categoria</label>
+                                <select id="filtro-categoria" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                                    <option value="todas">Todas as Categorias</option>
+                                </select>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; width: 100%; max-width: 200px;">
+                                <label style="font-size: 10px; color: var(--texto-secundario); font-weight: 700; margin-bottom: 5px; text-transform: uppercase;">Conta / Banco</label>
+                                <select id="filtro-conta" style="width: 100%;">
+                                    <option value="todas">Todas as Contas</option>
+                                </select>
+                            </div>
+
+                            <div class="campo-filtro">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Data Inicial</label>
+                                <input type="date" id="filtro-data-inicio" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                            </div>
+
+                            <div class="campo-filtro">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Data Final</label>
+                                <input type="date" id="filtro-data-fim" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin: 25px 0 15px 0; width: 100%;">
+                            <div style="flex-grow: 1; height: 1px; background: var(--texto-secundario); opacity: 0.2;"></div>
+                            <span style="padding: 0 15px; font-size: 10px; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Busca Avançada</span>
+                            <div style="flex-grow: 1; height: 1px; background: var(--texto-secundario); opacity: 0.2;"></div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end; width: 100%;">
+                            
+                            <div class="campo-filtro" style="grid-column: 1 / -1; max-width: 400px;">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Buscar Descrição ou Categoria</label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--texto-secundario); opacity: 0.7;"></i>
+                                    <input type="text" id="filtro-busca" placeholder="Digite uma palavra-chave..." oninput="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px 10px 10px 36px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                                </div>
+                            </div>
+
+                            <div class="campo-filtro">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Valor Min (R$)</label>
+                                <input type="number" id="filtro-valor-min" placeholder="0.00" oninput="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                            </div>
+                            
+                            <div class="campo-filtro">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Valor Max (R$)</label>
+                                <input type="number" id="filtro-valor-max" placeholder="9999.00" oninput="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                            </div>
+
+                            <div id="container-filtro-operador" class="campo-filtro" style="display: none;">
+                                <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Autor do Lançamento</label>
+                                <select id="filtro-operador" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                                    <option value="todos">Todos os Operadores</option>
+                                </select>
+                            </div>
+
+                        </div>
+                    </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Status</th>
+                        <th>Categoria</th>
+                        <th>Conta</th>
+                        <th>Tipo</th>
+                        <th>Valor</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpo-tabela"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modal-contas" class="modal-overlay">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(150,150,150,0.2); padding-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 18px; color: var(--texto);">Organizar Contas</h3>
+                <button class="btn-fechar" id="fechar-modal-contas">&times;</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 25px; align-items: center;">
+                <input type="color" id="cor-nova-conta" class="cor-picker-btn" value="#8A05BE" title="Cor do Banco">
+                <input type="text" id="nome-nova-conta" placeholder="Nova conta..." style="flex: 1; padding: 10px; border: 1px solid #edf2f7; border-radius: 8px; background: transparent; color: var(--texto); outline: none;">
+                <button type="button" id="btn-salvar-conta" style="background: var(--cor-primaria); color: white; border: none; padding: 0 15px; height: 40px; border-radius: 8px; font-weight: bold; cursor: pointer;">Salvar</button>
+            </div>
+            
+            <ul id="lista-contas" style="list-style: none; padding: 0; max-height: 250px; overflow-y: auto; padding-right: 5px;">
+                </ul>
+        </div>
+    </div>
+
+    <div id="modal-categorias" class="modal-overlay">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(150,150,150,0.2); padding-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 18px;">Organizar Categorias</h3>
+                <button class="btn-fechar" onclick="fecharModal()">&times;</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 25px; align-items: center;">
+                <input type="color" id="cor-categoria" class="cor-picker-btn" value="#0984e3" title="Cor da Categoria">
+                <input type="text" id="nova-categoria" placeholder="Nova categoria..." style="flex: 1; padding: 10px; border: 1px solid #edf2f7; border-radius: 8px; background: transparent; color: var(--texto); outline: none;">
+                <button type="button" onclick="salvarCategoria()" id="btn-salvar-categoria" style="background: var(--cor-primaria); color: white; border: none; padding: 0 15px; height: 40px; border-radius: 8px; font-weight: bold; cursor: pointer;">Salvar</button>
+            </div>
+            
+            <div id="lista-categorias-modal" style="max-height: 250px; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+    </div>
+
+    <div id="modal-qrcode" class="modal-overlay">
+        <div class="modal-box" style="text-align: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                <h3 style="margin: 0;">Escanear Comprovante</h3>
+                <button onclick="fecharModalQR()" class="btn-fechar">&times;</button>
+            </div>
+            
+            <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 20px;">
+                Aponte a câmera do seu celular para o código abaixo para enviar a foto.
+            </p>
+            
+            <div id="qrcode-container" style="background: white; padding: 15px; border-radius: 10px; display: inline-block; margin-bottom: 20px;"></div>
+            
+            <p id="status-qr" style="font-size: 14px; font-weight: bold; color: var(--cor-primaria);">
+                <i class="fa-solid fa-spinner fa-spin"></i> Aguardando celular...
+            </p>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

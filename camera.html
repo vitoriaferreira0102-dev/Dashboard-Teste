@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner de Comprovante</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 20px; font-family: sans-serif; background-color: #121212; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .btn-camera { background: linear-gradient(135deg, #0984e3, #74b9ff); color: white; border: none; padding: 20px 40px; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(9, 132, 227, 0.4); margin-top: 30px; }
+        #status { margin-top: 20px; font-size: 16px; color: #a29bfe; }
+    </style>
+</head>
+<body>
+    <i class="fa-solid fa-file-invoice-dollar" style="font-size: 60px; color: #00b894; margin-bottom: 20px;"></i>
+    <h2>Enviar Comprovante</h2>
+    <p style="color: #b2bec3; max-width: 300px;">Tire uma foto do recibo. Ele será enviado automaticamente para o seu computador.</p>
+    
+    <label for="camera-input" class="btn-camera">
+        <i class="fa-solid fa-camera"></i> Abrir Câmera
+    </label>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
+    
+    <div id="status"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
+
+        // COLOQUE A SUA CHAVE DO FIREBASE AQUI (Igual a do script.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAHk_Rwev-ZkkzJflzh7l5Ei1EBZwEgntA",
+            authDomain: "dashboard-financeiro-911a0.firebaseapp.com",
+            projectId: "dashboard-financeiro-911a0",
+            storageBucket: "dashboard-financeiro-911a0.firebasestorage.app",
+            messagingSenderId: "329815045435",
+            appId: "1:329815045435:web:37cbd62ed7fd399fcc731e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // Pega o ID secreto que o computador mandou pelo Link
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessaoId = urlParams.get('id');
+
+        if (!sessaoId) {
+            document.getElementById('status').innerText = "Erro: QR Code inválido.";
+            document.querySelector('.btn-camera').style.display = 'none';
+        }
+
+        document.getElementById('camera-input').addEventListener('change', async (event) => {
+            const arquivo = event.target.files[0];
+            if (!arquivo) return;
+
+            const status = document.getElementById('status');
+            status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando para o computador...';
+
+            try {
+                // 1. Sobe a foto pro Storage
+                const nomeArquivo = `comprovantes/${sessaoId}_${arquivo.name}`;
+                const referencia = ref(storage, nomeArquivo);
+                await uploadBytesResumable(referencia, arquivo);
+                const url = await getDownloadURL(referencia);
+
+                // 2. Avisa a "Sala de Espera" no Banco de Dados
+                await setDoc(doc(db, "temp_uploads", sessaoId), { url: url });
+
+                status.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #00b894;"></i> Sucesso! Pode olhar para a tela do PC.';
+                document.querySelector('.btn-camera').style.display = 'none';
+
+            } catch (erro) {
+                console.error(erro);
+                status.innerText = "Erro ao enviar a imagem.";
+                status.style.color = "#ff7675";
+            }
+        });
+    </script>
+</body>
+</html>
