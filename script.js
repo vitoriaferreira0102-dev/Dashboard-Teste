@@ -813,16 +813,44 @@ if (carrosselContas) {
 }
 
 // ==========================================
-// Clicou no cartão do banco? Filtra a tabela!
+// Clicou no cartão do banco? Filtra a tabela e abre a sanfona!
 // ==========================================
 window.filtrarPorContaCartao = function(nomeConta) {
     if (isDragging) return; // A MÁGICA: Se estava arrastando, ignora o clique!
     
-    const filtroConta = document.getElementById('filtro-conta');
-    if (filtroConta) {
-        filtroConta.value = nomeConta;
+    const selectFiltroConta = document.getElementById('filtro-conta');
+    
+    if (selectFiltroConta) {
+        // 1. Aplica o filtro e atualiza a tela
+        selectFiltroConta.value = nomeConta;
         atualizarTela();
-        document.querySelector('.tabela-container').scrollIntoView({ behavior: 'smooth' });
+        
+        // 2. Verifica se a sanfona está fechada. Se estiver, abre!
+        const painel = document.getElementById('painel-filtros-avancados');
+        const btn = document.getElementById('btn-toggle-filtros');
+        
+        if (!painel.classList.contains('aberto')) {
+            painel.classList.add('aberto');
+            btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Esconder Filtros';
+            btn.style.backgroundColor = 'var(--cor-primaria)';
+            btn.style.color = '#ffffff';
+        }
+        
+        // 3. Rola a tela suavemente para mostrar os filtros (em vez da tabela)
+        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // 4. MICROINTERAÇÃO: Dá um "brilho" verde no campo do banco para o cliente saber onde limpar
+        setTimeout(() => {
+            selectFiltroConta.style.transition = "box-shadow 0.4s, border 0.4s";
+            selectFiltroConta.style.boxShadow = "0 0 15px var(--cor-primaria)";
+            selectFiltroConta.style.borderColor = "var(--cor-primaria)";
+            
+            // Tira o brilho depois de 1.5 segundos
+            setTimeout(() => {
+                selectFiltroConta.style.boxShadow = "none";
+                selectFiltroConta.style.borderColor = "rgba(255,255,255,0.1)";
+            }, 1500);
+        }, 400); // Espera a sanfona desenrolar um pouco antes de brilhar
     }
 };
 
@@ -1809,6 +1837,25 @@ window.atualizarWidgetDinamico = function(listaFiltrada) {
     }
 };
 
+window.toggleFiltrosAvancados = function() {
+    const painel = document.getElementById('painel-filtros-avancados');
+    const btn = document.getElementById('btn-toggle-filtros');
+    
+    // Tira ou coloca a classe 'aberto' - o CSS faz o resto da animação
+    const estaAberto = painel.classList.toggle('aberto');
+    
+    if (estaAberto) {
+        btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Esconder Filtros';
+        // Removemos a troca de background manual aqui para não bugar o hover do CSS
+        btn.style.backgroundColor = 'var(--cor-primaria)';
+        btn.style.color = '#ffffff';
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-sliders"></i> Filtros Avançados';
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = 'var(--cor-primaria)';
+    }
+};
+
 // Dá a partida assim que a tela carrega
 window.addEventListener('DOMContentLoaded', atualizarDisplayMes);
 
@@ -1840,6 +1887,7 @@ window.mudarMes = mudarMes;
 window.alterarItensPorPagina = alterarItensPorPagina;
 window.mudarPagina = mudarPagina;
 window.alternarWidget = alternarWidget;
+window.toggleFiltrosAvancados = toggleFiltrosAvancados;
 
 // --- 9. INICIA O SISTEMA ---
 atualizarTela();

@@ -230,88 +230,65 @@
                     </div>
                 </div>
     
-                <div class="filtro-area" style="display: flex; flex-direction: column; width: 100%; background: var(--cartao); padding: 25px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; overflow: hidden; border: 1px solid rgba(150, 150, 150, 0.1);">
+                <!-- ========================================== -->
+                <!-- ÁREA DE BUSCA E FILTROS (HÍBRIDO SANFONA)  -->
+                <!-- ========================================== -->
+                <div style="background: var(--card-bg); padding: 15px 20px; border-radius: 15px; box-shadow: var(--sombra-suave); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);">
                     
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; width: 100%;">
-                        <div class="campo-filtro">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tipo</label>
-                            <select id="filtro-tipo" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
-                                <option value="todos">Todos os Tipos</option>
-                                <option value="receita">Receitas</option>
-                                <option value="despesa">Despesas</option>
-                            </select>
-                        </div>
-
-                        <div class="campo-filtro">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Status</label>
-                            <select id="filtro-status" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
-                                <option value="todos">Todos os Status</option>
-                                <option value="pago">Pago / Recebido</option>
-                                <option value="pendente">Pendente</option>
-                                <option value="cancelado">Cancelado</option>
-                            </select>
-                        </div>
-
-                        <div class="campo-filtro">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Categoria</label>
-                            <select id="filtro-categoria" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
-                                <option value="todas">Todas as Categorias</option>
-                            </select>
-                        </div>
-
-                        <div class="campo-filtro">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Conta / Banco</label>
-                            <select id="filtro-conta" style="width: 100%; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
-                                <option value="todas">Todas as Contas</option>
-                            </select>
-                        </div>
-
-                        <div class="campo-filtro">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Data Inicial</label>
-                            <input type="date" id="filtro-data-inicio" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
-                        </div>
-
-                        <div class="campo-filtro">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Data Final</label>
-                            <input type="date" id="filtro-data-fim" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 9px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
-                        </div>
-                    </div>
-
-                    <div style="display: flex; align-items: center; margin: 25px 0 15px 0; width: 100%;">
-                        <div style="flex-grow: 1; height: 1px; background: var(--texto-secundario); opacity: 0.2;"></div>
-                        <span style="padding: 0 15px; font-size: 10px; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Busca Avançada</span>
-                        <div style="flex-grow: 1; height: 1px; background: var(--texto-secundario); opacity: 0.2;"></div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end; width: 100%;">
-                        
-                        <div class="campo-filtro" style="grid-column: 1 / -1; max-width: 400px;">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Buscar Descrição ou Categoria</label>
-                            <div style="position: relative;">
-                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--texto-secundario); opacity: 0.7;"></i>
-                                <input type="text" id="filtro-busca" placeholder="Digite uma palavra-chave..." oninput="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px 10px 10px 36px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
-                            </div>
-                        </div>
-
-                        <div class="campo-filtro">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Valor Min (R$)</label>
-                            <input type="number" id="filtro-valor-min" placeholder="0.00" oninput="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                    <!-- LINHA VISÍVEL: Busca Rápida + Botão Sanfona -->
+                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px; position: relative;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--texto-secundario);"></i>
+                            <input type="text" id="filtro-busca" placeholder="Buscar descrição ou categoria..." oninput="atualizarTela()" style="width: 100%; padding: 10px 10px 10px 40px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; font-size: 14px;">
                         </div>
                         
-                        <div class="campo-filtro">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Valor Max (R$)</label>
-                            <input type="number" id="filtro-valor-max" placeholder="9999.00" oninput="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
+                        <!-- O margin-left: 20px (ou 40px) afasta o botão da pesquisa -->
+                        <button onclick="toggleFiltrosAvancados()" id="btn-toggle-filtros" class="btn-filtros-avancados" style="margin-left: 40px; padding: 10px 20px; border-radius: 8px; border: 1px solid var(--cor-primaria); background: transparent; color: var(--cor-primaria); cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s;">
+                            <i class="fa-solid fa-sliders"></i> Filtros Avançados
+                        </button>
+                    </div>
+
+                    <!-- LINHA OCULTA: Filtros Avançados (A Sanfona) -->
+                    <!-- Aumentei o minmax para 180px para dar mais folga aos botões -->
+                    <div id="painel-filtros-avancados" class="filtros-sanfona">
+                        
+                        <select id="filtro-tipo" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                            <option value="todos">Qualquer Tipo</option>
+                            <option value="receita">Receitas</option>
+                            <option value="despesa">Despesas</option>
+                        </select>
+                        
+                        <select id="filtro-categoria" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                            <option value="todas">Todas as Categorias</option>
+                        </select>
+                        
+                        <select id="filtro-conta" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                            <option value="todas">Todas as Contas</option>
+                        </select>
+
+                        <select id="filtro-status" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                            <option value="todos">Qualquer Status</option>
+                            <option value="pago">Pago / Recebido</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+
+                        <!-- CORREÇÃO DA DATA: O "grid-column: 1 / -1" obriga as datas a ficarem sozinhas na linha inteira! -->
+                        <div style="grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; background: var(--fundo); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0 15px;">
+                            <span style="color: var(--texto-secundario); font-size: 13px; font-weight: 600; white-space: nowrap;">Período Específico:</span>
+                            <input type="date" id="filtro-data-inicio" onchange="atualizarTela()" title="Data Inicial" style="flex:1; padding: 10px 5px; border: none; background: transparent; color: var(--texto); outline: none; cursor: pointer;">
+                            <span style="color: var(--texto-secundario); font-size: 12px; font-weight: bold;">até</span>
+                            <input type="date" id="filtro-data-fim" onchange="atualizarTela()" title="Data Final" style="flex:1; padding: 10px 5px; border: none; background: transparent; color: var(--texto); outline: none; cursor: pointer;">
                         </div>
 
-                        <div id="container-filtro-operador" class="campo-filtro" style="display: none;">
-                            <label style="display: block; margin-bottom: 6px; font-size: 11px; color: var(--texto-secundario); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Autor do Lançamento</label>
-                            <select id="filtro-operador" onchange="atualizarTela()" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); outline: none;">
-                                <option value="todos">Todos os Operadores</option>
+                        <div id="container-filtro-operador" style="display: none; grid-column: 1 / -1;">
+                            <select id="filtro-operador" onchange="atualizarTela()" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                                <option value="todos">Todos Operadores</option>
                             </select>
                         </div>
-
                     </div>
                 </div>
+                <!-- ========================================== -->
                 <table>
                     <thead>
                         <tr>

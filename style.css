@@ -214,8 +214,6 @@ body.dark-theme .cartao-conta { border-color: rgba(255,255,255,0.05); }
     transform: translateY(-2px); box-shadow: 0 6px 20px rgba(9, 132, 227, 0.4); 
 }
 
-
-
 .graficos-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .grafico-box { position: relative; height: 300px; display: flex; justify-content: center; align-items: center; }
 
@@ -225,6 +223,40 @@ body.dark-theme .cartao-conta { border-color: rgba(255,255,255,0.05); }
 .filtro-area select, .filtro-area input[type="date"] { 
     padding: 8px 15px; border-radius: 10px; border: 1px solid #edf2f7; 
     background: #f8f9fa; cursor: pointer; color: var(--texto); font-family: inherit; box-sizing: border-box; height: 42px; font-weight: 500;
+}
+
+/* Efeito de preenchimento do botão ao passar o mouse */
+.btn-filtros-avancados:hover {
+    background-color: var(--cor-primaria) !important;
+    color: white !important;
+}
+
+/* Base para a animação de desenrolar */
+.filtros-sanfona {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    
+    /* Configuração da animação */
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* O TRUQUE: Cria uma margem invisível nas laterais para o brilho não ser cortado */
+    padding: 0 15px;
+    margin: 0 -15px;
+    border-top: 1px solid transparent;
+}
+
+/* Classe que o JavaScript vai "ligar" para abrir */
+.filtros-sanfona.aberto {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 15px;
+    padding-top: 15px;
+    padding-bottom: 15px; /* Garante que o brilho também não corte na parte de baixo */
+    border-top: 1px solid rgba(255,255,255,0.05);
 }
 
 table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
