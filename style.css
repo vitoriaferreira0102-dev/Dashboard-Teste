@@ -255,7 +255,6 @@ body.dark-theme .cartao-conta { border-color: rgba(255,255,255,0.05); }
     opacity: 1;
     margin-top: 15px;
     padding-top: 15px;
-    padding-bottom: 15px; /* Garante que o brilho também não corte na parte de baixo */
     border-top: 1px solid rgba(255,255,255,0.05);
 }
 
@@ -305,6 +304,50 @@ table th:last-child, table td:last-child { width: 100px; text-align: center; }
 .cor-picker-btn::-webkit-color-swatch {
     border: none;
     border-radius: 50%;
+}
+
+/* ESTILOS DAS ABAS */
+.tabs-nav::-webkit-scrollbar { display: none; } /* Esconde scroll no mobile */
+
+.tab-btn {
+    background: var(--card-bg);
+    color: var(--texto-secundario);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 12px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    box-shadow: var(--sombra-suave);
+}
+
+.tab-btn:hover {
+    transform: translateY(-2px);
+}
+
+.tab-btn.ativo {
+    background: var(--cor-primaria);
+    color: white;
+    border-color: var(--cor-primaria);
+}
+
+.conteudo-aba {
+    display: none;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+.conteudo-aba.ativa {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* BARRA DE PROGRESSO COM GRADIENTE ANIMADO */

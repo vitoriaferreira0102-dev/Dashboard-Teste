@@ -32,17 +32,10 @@
             <p id="msg-erro-login" style="color: var(--cor-alerta); font-size: 13px; margin-top: 15px; display: none;">Credenciais inválidas.</p>
         </div>
     </div>
+
     <div class="dashboard-container">
-        <div id="area-admin" style="display: none; background: var(--cartao); padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid var(--cor-primaria);">
-            <h3 style="color: var(--texto); margin-bottom: 15px;"><i class="fa-solid fa-user-shield"></i> Gestão de Acessos</h3>
-            <form id="form-cadastro-admin" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="email" id="novo-email-admin" placeholder="E-mail do novo usuário" required style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
-                <input type="password" id="nova-senha-admin" placeholder="Senha inicial" required style="padding: 10px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
-                <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: var(--gradiente-btn); color: white; border: none; cursor: pointer; font-weight: bold;">Cadastrar Operador</button>
-            </form>
-            <p id="msg-sucesso-admin" style="color: var(--cor-primaria); font-size: 13px; margin-top: 10px; display: none;">Usuário cadastrado com sucesso!</p>
-        </div>
-        <div class="top-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        
+        <div class="top-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h2 style="color: var(--texto);">Painel de Controle Financeiro</h2>
             
             <div style="display: flex; gap: 20px; align-items: center;">
@@ -57,274 +50,402 @@
             </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px;">
-            <h2 style="margin: 0; font-size: 18px; color: var(--texto); font-weight: 700;">Minhas Contas</h2>
-            <button id="btn-ocultar-saldos" onclick="toggleSaldos()" style="background: transparent; border: none; color: var(--texto-secundario); font-size: 18px; cursor: pointer; transition: 0.3s;" title="Ocultar/Mostrar Valores">
-                <i class="fa-solid fa-eye"></i>
+        <div class="tabs-nav" style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px;">
+            <button class="tab-btn ativo" onclick="abrirAba('aba-visao-geral', this)">
+                <i class="fa-solid fa-chart-pie"></i> Visão Geral
+            </button>
+            <button class="tab-btn" onclick="abrirAba('aba-movimentacoes', this)">
+                <i class="fa-solid fa-money-bill-transfer"></i> Movimentações
+            </button>
+            <button class="tab-btn" onclick="abrirAba('aba-projecoes', this)">
+                <i class="fa-solid fa-rocket"></i> Projeções
+            </button>
+            <button class="tab-btn" onclick="abrirAba('aba-configuracoes', this)">
+                <i class="fa-solid fa-gear"></i> Configurações
             </button>
         </div>
 
-        <div id="carrossel-contas" class="carrossel-contas">
-            </div>
+        <div class="tabs-container">
 
-        <!-- ========================================== -->
-        <!-- NAVEGAÇÃO POR MESES (MÁQUINA DO TEMPO)     -->
-        <!-- ========================================== -->
-        <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 25px; background: var(--card-bg); padding: 10px 20px; border-radius: 15px; box-shadow: var(--sombra-suave); width: max-content; margin-left: auto; margin-right: auto; border: 1px solid rgba(255,255,255,0.05);">
-            <button onclick="mudarMes(-1)" style="background: transparent; border: none; font-size: 18px; color: var(--texto-secundario); cursor: pointer; padding: 5px 15px; transition: 0.2s;" title="Mês Anterior">
-                <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            
-            <h2 id="display-mes-atual" style="margin: 0; font-size: 16px; color: var(--texto); font-weight: 700; text-transform: uppercase; min-width: 140px; text-align: center; letter-spacing: 1px;">
-                CARREGANDO...
-            </h2>
-            
-            <button onclick="mudarMes(1)" style="background: transparent; border: none; font-size: 18px; color: var(--texto-secundario); cursor: pointer; padding: 5px 15px; transition: 0.2s;" title="Próximo Mês">
-                <i class="fa-solid fa-chevron-right"></i>
-            </button>
-        </div>
-
-        <div class="resumo-grid">
-            <div class="card">
-                <h3>Receitas</h3>
-                <div class="valor receita" id="total-receita">R$ 0,00</div>
-            </div>
-            <div class="card">
-                <h3>Despesas</h3>
-                <div class="valor despesa" id="total-despesa">R$ 0,00</div>
-            </div>
-            <div class="card">
-                <h3>Lucro Líquido</h3>
-                <div class="valor" id="lucro-liquido">R$ 0,00</div>
-            </div>
-            <div class="card meta-card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 id="nome-meta-display">Meta do Período</h3> <button onclick="definirMeta()" class="btn-meta-edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                    </div>
-                <div class="valor" id="display-meta">R$ 0,00</div>
-                <div class="container-barra">
-                    <div id="barra-progresso" class="progresso-fill"></div>
+            <div id="aba-visao-geral" class="conteudo-aba ativa">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px;">
+                    <h2 style="margin: 0; font-size: 18px; color: var(--texto); font-weight: 700;">Minhas Contas</h2>
+                    <button id="btn-ocultar-saldos" onclick="toggleSaldos()" style="background: transparent; border: none; color: var(--texto-secundario); font-size: 18px; cursor: pointer; transition: 0.3s;" title="Ocultar/Mostrar Valores">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
                 </div>
-                <div id="texto-progresso" style="font-size: 12px; color: #636e72; margin-top: 5px;">0% atingido</div>
-            </div>
-        </div>
-
-        <div class="meio-grid">
-            <div class="form-container">
-                <div style="margin-bottom: 10px;">
-                    <h3 style="margin: 0;">Novo Lançamento</h3>
+        
+                <div id="carrossel-contas" class="carrossel-contas"></div>
+        
+                <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 25px; background: var(--card-bg); padding: 10px 20px; border-radius: 15px; box-shadow: var(--sombra-suave); width: max-content; margin-left: auto; margin-right: auto; border: 1px solid rgba(255,255,255,0.05);">
+                    <button onclick="mudarMes(-1)" style="background: transparent; border: none; font-size: 18px; color: var(--texto-secundario); cursor: pointer; padding: 5px 15px; transition: 0.2s;" title="Mês Anterior">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    
+                    <h2 id="display-mes-atual" style="margin: 0; font-size: 16px; color: var(--texto); font-weight: 700; text-transform: uppercase; min-width: 140px; text-align: center; letter-spacing: 1px;">
+                        CARREGANDO...
+                    </h2>
+                    
+                    <button onclick="mudarMes(1)" style="background: transparent; border: none; font-size: 18px; color: var(--texto-secundario); cursor: pointer; padding: 5px 15px; transition: 0.2s;" title="Próximo Mês">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
                 </div>
-                <form id="form-transacao">
-                    <input type="text" id="descricao" placeholder="Descrição (ex: Corrida, Venda)" required>
-                    <input type="text" id="valor" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" required>
-                    <input type="date" id="data" required>
-
-                    <div style="margin-bottom: 12px;">
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <select id="conta" onchange="atualizarCorDaConta()" style="flex: 1; margin-bottom: 0; border: 1px solid #dfe6e9; border-left: 5px solid #b2bec3; border-radius: 8px; padding: 12px; cursor: pointer; color: var(--texto);">
-                                <option value="" disabled selected>Carregando contas...</option>
-                            </select>
-                            
-                            <button type="button" id="btn-abrir-modal-conta" style="background: var(--gradiente-btn); color: white; border: none; width: 48px; min-width: 48px; height: 50px; border-radius: 10px; cursor: pointer; font-weight: bold; flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center;" title="Organizar Bancos">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
+        
+                <div class="resumo-grid" style="margin-bottom: 25px;">
+                    <div class="card">
+                        <h3>Receitas</h3>
+                        <div class="valor receita" id="total-receita">R$ 0,00</div>
                     </div>
-
-                    <div style="margin-bottom: 12px;">
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <select id="categoria" required onchange="atualizarCorDaCaixaDeSelecao()" style="flex: 1; margin-bottom: 0; border: 1px solid #dfe6e9; border-left: 5px solid var(--cor-primaria); border-radius: 8px; padding: 12px; cursor: pointer; color: var(--texto);">
-                            </select>
-                            
-                            <button type="button" onclick="abrirModal()" style="background: var(--gradiente-btn); color: white; border: none; width: 48px; min-width: 48px; height: 46px; border-radius: 10px; cursor: pointer; font-weight: bold; flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center;" title="Organizar Categorias">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
+                    <div class="card">
+                        <h3>Despesas</h3>
+                        <div class="valor despesa" id="total-despesa">R$ 0,00</div>
+                    </div>
+                    <div class="card">
+                        <h3>Lucro Líquido</h3>
+                        <div class="valor" id="lucro-liquido">R$ 0,00</div>
+                    </div>
+                    <div class="card meta-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 id="nome-meta-display">Meta do Período</h3> 
+                            <button onclick="definirMeta()" class="btn-meta-edit"><i class="fa-solid fa-pen-to-square"></i></button>
                         </div>
+                        <div class="valor" id="display-meta">R$ 0,00</div>
+                        <div class="container-barra">
+                            <div id="barra-progresso" class="progresso-fill"></div>
+                        </div>
+                        <div id="texto-progresso" style="font-size: 12px; color: #636e72; margin-top: 5px;">0% atingido</div>
+                    </div>
+                </div>
+
+                <div class="graficos-wrapper" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
+                    <div class="grafico-box card">
+                        <canvas id="graficoRosca"></canvas>
+                    </div>
+                    <div class="grafico-box card">
+                        <canvas id="graficoBarras"></canvas>
                     </div>
                     
-                    <select id="tipo" required style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #dfe6e9; color: var(--texto);">
-                        <option value="receita">Receita (Entrada)</option>
-                        <option value="despesa">Despesa (Saída)</option>
-                    </select>
-
-                    <select id="status-lancamento" required style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #dfe6e9;  color: var(--texto);">
-                        <option value="pago">✅ Pago / Recebido</option>
-                        <option value="pendente">⏳ Pendente (A Pagar/Receber)</option>
-                        <option value="cancelado">❌ Cancelado</option>
-                    </select>
-                    <div style="background: var(--fundo); border: 1px dashed #b2bec3; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center; transition: 0.3s;" id="area-upload">
-                        <input type="hidden" id="url-comprovante" value="">
-                        
-                        <div id="preview-comprovante" style="display: none; position: relative; margin-bottom: 10px;">
-                            <img id="img-preview" src="" alt="Comprovante" style="max-width: 100%; max-height: 150px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                            <button type="button" onclick="removerAnexo()" style="position: absolute; top: -10px; right: -10px; background: var(--cor-alerta); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; box-shadow: none; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-times"></i></button>
+                    <div id="widget-dinamico" style="grid-column: 1 / -1; background: var(--card-bg); padding: 20px; border-radius: 15px; box-shadow: var(--sombra-suave); border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
+                            <button onclick="alternarWidget(-1)" style="background: transparent; border: none; color: var(--texto-secundario); cursor: pointer; font-size: 16px; padding: 5px;"><i class="fa-solid fa-chevron-left"></i></button>
+                            <h3 id="titulo-widget" style="margin: 0; font-size: 14px; color: var(--texto-secundario); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Evolução Diária</h3>
+                            <button onclick="alternarWidget(1)" style="background: transparent; border: none; color: var(--texto-secundario); cursor: pointer; font-size: 16px; padding: 5px;"><i class="fa-solid fa-chevron-right"></i></button>
                         </div>
-
-                        <div id="botoes-upload" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                            <label for="arquivo-upload" style="flex: 1; background: var(--cartao); border: 1px solid #dfe6e9; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--texto); display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
-                                <i class="fa-solid fa-paperclip"></i> Anexar
-                            </label>
-                            <input type="file" id="arquivo-upload" accept="image/*" style="display: none;" onchange="uploadTradicional(event)">
-                            
-                            <button type="button" onclick="abrirModalQR()" style="flex: 1; background: #000; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: none; margin: 0;">
-                                <i class="fa-solid fa-qrcode"></i> Pelo Celular
-                            </button>
+                        <div id="slide-grafico-linha" style="display: block; height: 200px; width: 100%;">
+                            <canvas id="graficoEvolucao"></canvas>
                         </div>
-                        <div id="upload-status" style="font-size: 11px; color: #636e72; margin-top: 10px; display: none;">Enviando...</div>
-                    </div>
-                    <button type="submit" id="btn-salvar-transacao" style="width: 100%; padding: 12px 15px; margin-bottom: 12px; border: 1px solid #edf2f7; border-radius: 10px; box-sizing: border-box; background-color: #f8f9fa; font-family: 'Poppins', sans-serif; transition: 0.3s;">Adicionar</button>
-                </form>
-            </div>
-
-           <div class="graficos-wrapper">
-                <div class="grafico-box">
-                    <canvas id="graficoRosca"></canvas>
-                </div>
-                <div class="grafico-box">
-                    <canvas id="graficoBarras"></canvas>
-                </div>
-                <!-- ========================================== -->
-                <!-- WIDGET DINÂMICO: LINHAS & ALERTAS          -->
-                <!-- ========================================== -->
-                <div id="widget-dinamico" style="grid-column: 1 / -1; background: var(--card-bg); padding: 20px; border-radius: 15px; box-shadow: var(--sombra-suave); border: 1px solid rgba(255,255,255,0.05);">
-                    
-                    <!-- Cabeçalho com Setas de Navegação -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
-                        <button onclick="alternarWidget(-1)" style="background: transparent; border: none; color: var(--texto-secundario); cursor: pointer; font-size: 16px; padding: 5px;"><i class="fa-solid fa-chevron-left"></i></button>
-                        <h3 id="titulo-widget" style="margin: 0; font-size: 14px; color: var(--texto-secundario); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Evolução Diária</h3>
-                        <button onclick="alternarWidget(1)" style="background: transparent; border: none; color: var(--texto-secundario); cursor: pointer; font-size: 16px; padding: 5px;"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-
-                    <!-- TELA 1: Gráfico de Linhas -->
-                    <div id="slide-grafico-linha" style="display: block; height: 200px; width: 100%;">
-                        <canvas id="graficoEvolucao"></canvas>
-                    </div>
-
-                    <!-- TELA 2: Painel de Vencimentos -->
-                    <div id="slide-alertas" style="display: none; height: 200px; overflow-y: auto; scrollbar-width: thin;">
-                        <ul id="lista-alertas-vencimento" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
-                            <!-- Os alertas vão aparecer magicamente aqui -->
-                        </ul>
-                    </div>
-                    
-                    <!-- Bolinhas Indicadoras Embaixo -->
-                    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 15px;">
-                        <span id="ponto-widget-1" style="width: 8px; height: 8px; border-radius: 50%; background: var(--cor-primaria); transition: 0.3s;"></span>
-                        <span id="ponto-widget-2" style="width: 8px; height: 8px; border-radius: 50%; background: var(--texto-secundario); opacity: 0.3; transition: 0.3s;"></span>
+                        <div id="slide-alertas" style="display: none; height: 200px; overflow-y: auto; scrollbar-width: thin;">
+                            <ul id="lista-alertas-vencimento" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;"></ul>
+                        </div>
+                        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 15px;">
+                            <span id="ponto-widget-1" style="width: 8px; height: 8px; border-radius: 50%; background: var(--cor-primaria); transition: 0.3s;"></span>
+                            <span id="ponto-widget-2" style="width: 8px; height: 8px; border-radius: 50%; background: var(--texto-secundario); opacity: 0.3; transition: 0.3s;"></span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="tabela-container">
-            <div class="tabela-header">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 2px solid var(--fundo); padding-bottom: 10px; margin-bottom: 15px;">
-                    <h3 style="margin: 0;" id="titulo-historico">Histórico Recente</h3>
-                    
-                    <div id="grupo-botoes" style="display: flex; gap: 10px;">
-                        <button onclick="exportarExcel()" class="btn-secundario" title="Exportar para Excel" style="color: #27ae60;"><i class="fa-solid fa-file-excel"></i></button>
-                        <button onclick="exportarDados()" class="btn-secundario" title="Baixar Backup JSON"><i class="fa-solid fa-download"></i></button>
-                        <button onclick="document.getElementById('input-import').click()" class="btn-secundario" title="Restaurar Backup"><i class="fa-solid fa-upload"></i></button>
-                        <input type="file" id="input-import" style="display: none;" onchange="importarDados(event)">
-                        <button onclick="gerarPDF()" class="btn-pdf"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
+            <div id="aba-movimentacoes" class="conteudo-aba">
+                
+                <div class="form-container" style="max-width: 700px; margin: 0 auto 30px auto;">
+                    <div style="margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: var(--texto); font-size: 18px;">Novo Lançamento</h3>
                     </div>
-                </div>
+                    <form id="form-transacao">
+                        <input type="text" id="descricao" placeholder="Descrição (ex: Corrida, Venda)" required>
+                        <input type="text" id="valor" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" required>
+                        <input type="date" id="data" required>
     
-                <!-- ========================================== -->
-                <!-- ÁREA DE BUSCA E FILTROS (HÍBRIDO SANFONA)  -->
-                <!-- ========================================== -->
-                <div style="background: var(--card-bg); padding: 15px 20px; border-radius: 15px; box-shadow: var(--sombra-suave); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);">
-                    
-                    <!-- LINHA VISÍVEL: Busca Rápida + Botão Sanfona -->
-                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                        <!-- Adicionei box-sizing: border-box no input para não vazar! -->
-                        <div style="flex: 1; min-width: 250px; position: relative;">
-                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--texto-secundario);"></i>
-                            <input type="text" id="filtro-busca" placeholder="Buscar descrição ou categoria..." oninput="atualizarTela()" style="box-sizing: border-box; width: 100%; padding: 10px 10px 10px 40px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; font-size: 14px;">
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="conta" onchange="atualizarCorDaConta()" style="flex: 1; margin-bottom: 0; border: 1px solid #dfe6e9; border-left: 5px solid #b2bec3; border-radius: 8px; padding: 12px; cursor: pointer; color: var(--texto);">
+                                    <option value="" disabled selected>Carregando contas...</option>
+                                </select>
+                                <button type="button" id="btn-abrir-modal-conta" style="background: var(--gradiente-btn); color: white; border: none; width: 48px; min-width: 48px; height: 50px; border-radius: 10px; cursor: pointer; font-weight: bold; flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center;" title="Organizar Bancos">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+    
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="categoria" required onchange="atualizarCorDaCaixaDeSelecao()" style="flex: 1; margin-bottom: 0; border: 1px solid #dfe6e9; border-left: 5px solid var(--cor-primaria); border-radius: 8px; padding: 12px; cursor: pointer; color: var(--texto);">
+                                </select>
+                                <button type="button" onclick="abrirModal()" style="background: var(--gradiente-btn); color: white; border: none; width: 48px; min-width: 48px; height: 46px; border-radius: 10px; cursor: pointer; font-weight: bold; flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center;" title="Organizar Categorias">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
                         
-                        <!-- Removi o margin-left que estava quebrando o celular -->
-                        <button onclick="toggleFiltrosAvancados()" id="btn-toggle-filtros" class="btn-filtros-avancados" style="padding: 10px 20px; border-radius: 8px; border: 1px solid var(--cor-primaria); background: transparent; color: var(--cor-primaria); cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; flex-grow: 1; max-width: max-content;">
-                            <i class="fa-solid fa-sliders"></i> Filtros Avançados
-                        </button>
-                    </div>
-
-                    <!-- LINHA OCULTA: Filtros Avançados (A Sanfona) -->
-                    <div id="painel-filtros-avancados" class="filtros-sanfona">
-                        
-                        <select id="filtro-tipo" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
-                            <option value="todos">Qualquer Tipo</option>
-                            <option value="receita">Receitas</option>
-                            <option value="despesa">Despesas</option>
-                        </select>
-                        
-                        <select id="filtro-categoria" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
-                            <option value="todas">Todas as Categorias</option>
-                        </select>
-                        
-                        <select id="filtro-conta" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
-                            <option value="todas">Todas as Contas</option>
-                        </select>
-
-                        <select id="filtro-status" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
-                            <option value="todos">Qualquer Status</option>
-                            <option value="pago">Pago / Recebido</option>
-                            <option value="pendente">Pendente</option>
-                            <option value="cancelado">Cancelado</option>
-                        </select>
-
-                        <!-- NOVO CALENDÁRIO: Flex-wrap ativado e texto ocupando 100% da linha no mobile -->
-                        <div style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--fundo); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 15px;">
-                            <span style="color: var(--texto-secundario); font-size: 13px; font-weight: 600; width: 100%; margin-bottom: -5px;">Período Específico:</span>
-                            
-                            <input type="date" id="filtro-data-inicio" onchange="atualizarTela()" title="Data Inicial" style="flex:1; min-width: 110px; padding: 10px 5px; border: none; background: transparent; color: var(--texto); outline: none; cursor: pointer; box-sizing: border-box;">
-                            <span style="color: var(--texto-secundario); font-size: 12px; font-weight: bold; text-align: center;">até</span>
-                            <input type="date" id="filtro-data-fim" onchange="atualizarTela()" title="Data Final" style="flex:1; min-width: 110px; padding: 10px 5px; border: none; background: transparent; color: var(--texto); outline: none; cursor: pointer; box-sizing: border-box;">
-                        </div>
-
-                        <div id="container-filtro-operador" style="display: none; grid-column: 1 / -1;">
-                            <select id="filtro-operador" onchange="atualizarTela()" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer; box-sizing: border-box;">
-                                <option value="todos">Todos Operadores</option>
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <select id="tipo" required style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #dfe6e9; color: var(--texto);">
+                                <option value="receita">Receita (Entrada)</option>
+                                <option value="despesa">Despesa (Saída)</option>
+                            </select>
+        
+                            <select id="status-lancamento" required style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #dfe6e9; color: var(--texto);">
+                                <option value="pago">✅ Pago / Recebido</option>
+                                <option value="pendente">⏳ Pendente</option>
+                                <option value="cancelado">❌ Cancelado</option>
                             </select>
                         </div>
-                    </div>
+
+                        <div style="background: var(--fundo); border: 1px dashed #b2bec3; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center; transition: 0.3s;" id="area-upload">
+                            <input type="hidden" id="url-comprovante" value="">
+                            
+                            <div id="preview-comprovante" style="display: none; position: relative; margin-bottom: 10px;">
+                                <img id="img-preview" src="" alt="Comprovante" style="max-width: 100%; max-height: 150px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                <button type="button" onclick="removerAnexo()" style="position: absolute; top: -10px; right: -10px; background: var(--cor-alerta); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; box-shadow: none; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-times"></i></button>
+                            </div>
+    
+                            <div id="botoes-upload" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                <label for="arquivo-upload" style="flex: 1; background: var(--cartao); border: 1px solid #dfe6e9; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--texto); display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+                                    <i class="fa-solid fa-paperclip"></i> Anexar
+                                </label>
+                                <input type="file" id="arquivo-upload" accept="image/*" style="display: none;" onchange="uploadTradicional(event)">
+                                
+                                <button type="button" onclick="abrirModalQR()" style="flex: 1; background: #000; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: none; margin: 0;">
+                                    <i class="fa-solid fa-qrcode"></i> Pelo Celular
+                                </button>
+                            </div>
+                            <div id="upload-status" style="font-size: 11px; color: #636e72; margin-top: 10px; display: none;">Enviando...</div>
+                        </div>
+                        <button type="submit" id="btn-salvar-transacao" style="width: 100%; padding: 12px 15px; margin-bottom: 12px; border: 1px solid #edf2f7; border-radius: 10px; box-sizing: border-box; background-color: #f8f9fa; font-family: 'Poppins', sans-serif; transition: 0.3s;">Adicionar</button>
+                    </form>
                 </div>
-                <!-- ========================================== -->
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Descrição</th>
-                            <th>Status</th>
-                            <th>Categoria</th>
-                            <th>Conta</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpo-tabela"></tbody>
-                </table>
-                <!-- CONTROLES DE PAGINAÇÃO -->
-                <div id="controles-paginacao" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; gap: 15px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="color: var(--texto-secundario); font-size: 13px; font-weight: 500;">Itens por página:</span>
-                        <select id="select-itens-pagina" onchange="alterarItensPorPagina()" style="background: var(--fundo); color: var(--texto); border: 1px solid rgba(255,255,255,0.1); padding: 6px 10px; border-radius: 8px; cursor: pointer; outline: none; font-size: 13px; font-weight: 600;">
-                            <option value="10">10</option>
-                            <option value="15">15</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                            <option value="todos">Todos</option>
-                        </select>
-                    </div>
-                    
-                    <div id="numeros-paginacao" style="display: flex; gap: 5px;">
-                        <!-- Os botões numerados [1] [2] [3] vão aparecer aqui magicamente -->
+
+                <div class="tabela-container">
+                    <div class="tabela-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 2px solid var(--fundo); padding-bottom: 10px; margin-bottom: 15px;">
+                            <h3 style="margin: 0;" id="titulo-historico">Histórico Recente</h3>
+                            
+                            <div id="grupo-botoes" style="display: flex; gap: 10px;">
+                                <button onclick="exportarExcel()" class="btn-secundario" title="Exportar para Excel" style="color: #27ae60;"><i class="fa-solid fa-file-excel"></i></button>
+                                <button onclick="exportarDados()" class="btn-secundario" title="Baixar Backup JSON"><i class="fa-solid fa-download"></i></button>
+                                <button onclick="document.getElementById('input-import').click()" class="btn-secundario" title="Restaurar Backup"><i class="fa-solid fa-upload"></i></button>
+                                <input type="file" id="input-import" style="display: none;" onchange="importarDados(event)">
+                                <button onclick="gerarPDF()" class="btn-pdf"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
+                            </div>
+                        </div>
+            
+                        <div style="background: var(--card-bg); padding: 15px 20px; border-radius: 15px; box-shadow: var(--sombra-suave); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); width: 100%; box-sizing: border-box;">
+                            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                                <div style="flex: 1; min-width: 250px; position: relative;">
+                                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--texto-secundario);"></i>
+                                    <input type="text" id="filtro-busca" placeholder="Buscar descrição ou categoria..." oninput="atualizarTela()" style="box-sizing: border-box; width: 100%; padding: 10px 10px 10px 40px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; font-size: 14px;">
+                                </div>
+                                <button onclick="toggleFiltrosAvancados()" id="btn-toggle-filtros" class="btn-filtros-avancados" style="padding: 10px 20px; border-radius: 8px; border: 1px solid var(--cor-primaria); background: transparent; color: var(--cor-primaria); cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; flex-grow: 1; max-width: max-content;">
+                                    <i class="fa-solid fa-sliders"></i> Filtros Avançados
+                                </button>
+                            </div>
+        
+                            <div id="painel-filtros-avancados" class="filtros-sanfona">
+                                <select id="filtro-tipo" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                                    <option value="todos">Qualquer Tipo</option>
+                                    <option value="receita">Receitas</option>
+                                    <option value="despesa">Despesas</option>
+                                </select>
+                                <select id="filtro-categoria" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                                    <option value="todas">Todas as Categorias</option>
+                                </select>
+                                <select id="filtro-conta" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                                    <option value="todas">Todas as Contas</option>
+                                </select>
+                                <select id="filtro-status" onchange="atualizarTela()" style="padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer;">
+                                    <option value="todos">Qualquer Status</option>
+                                    <option value="pago">Pago / Recebido</option>
+                                    <option value="pendente">Pendente</option>
+                                    <option value="cancelado">Cancelado</option>
+                                </select>
+        
+                                <div style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--fundo); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 15px;">
+                                    <span style="color: var(--texto-secundario); font-size: 13px; font-weight: 600; width: 100%; margin-bottom: -5px;">Período Específico:</span>
+                                    <input type="date" id="filtro-data-inicio" onchange="atualizarTela()" title="Data Inicial" style="flex:1; min-width: 110px; padding: 10px 5px; border: none; background: transparent; color: var(--texto); outline: none; cursor: pointer; box-sizing: border-box;">
+                                    <span style="color: var(--texto-secundario); font-size: 12px; font-weight: bold; text-align: center;">até</span>
+                                    <input type="date" id="filtro-data-fim" onchange="atualizarTela()" title="Data Final" style="flex:1; min-width: 110px; padding: 10px 5px; border: none; background: transparent; color: var(--texto); outline: none; cursor: pointer; box-sizing: border-box;">
+                                </div>
+        
+                                <div id="container-filtro-operador" style="display: none; grid-column: 1 / -1;">
+                                    <select id="filtro-operador" onchange="atualizarTela()" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--fundo); color: var(--texto); outline: none; cursor: pointer; box-sizing: border-box;">
+                                        <option value="todos">Todos Operadores</option>
+                                    </select>
+                                </div>
+                                <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; padding-top: 5px;">
+                                    <button onclick="limparFiltros()" style="padding: 8px 15px; border-radius: 8px; border: none; background: rgba(255, 118, 117, 0.1); color: var(--cor-alerta); cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.3s;">
+                                        <i class="fa-solid fa-eraser"></i> Limpar Filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição</th>
+                                    <th>Status</th>
+                                    <th>Categoria</th>
+                                    <th>Conta</th>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpo-tabela"></tbody>
+                        </table>
+                        
+                        <div id="controles-paginacao" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; gap: 15px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="color: var(--texto-secundario); font-size: 13px; font-weight: 500;">Itens por página:</span>
+                                <select id="select-itens-pagina" onchange="alterarItensPorPagina()" style="background: var(--fundo); color: var(--texto); border: 1px solid rgba(255,255,255,0.1); padding: 6px 10px; border-radius: 8px; cursor: pointer; outline: none; font-size: 13px; font-weight: 600;">
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="todos">Todos</option>
+                                </select>
+                            </div>
+                            <div id="numeros-paginacao" style="display: flex; gap: 5px;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+
+            <div id="aba-projecoes" class="conteudo-aba">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px;">
+                    <h2 style="margin: 0; font-size: 18px; color: var(--texto); font-weight: 700;">Simulação de Caixa Futuro</h2>
+                    <select id="filtro-meses-projecao" style="padding: 8px 15px; border-radius: 8px; border: 1px solid var(--cor-primaria); background: transparent; color: var(--texto); font-weight: 600; outline: none; cursor: pointer;">
+                        <option value="3">Próximos 3 Meses</option>
+                        <option value="6">Próximos 6 Meses</option>
+                        <option value="12">1 Ano</option>
+                    </select>
+                </div>
+
+                <div class="meio-grid" style="margin-bottom: 25px; grid-template-columns: 1fr 3fr;">
+                    
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div class="card" style="padding: 20px;">
+                            <h3 style="margin: 0 0 10px 0; font-size: 13px; color: var(--texto-secundario); text-transform: uppercase;">Saldo Previsto (Final)</h3>
+                            <div class="valor" id="display-saldo-previsto" style="font-size: 24px; color: var(--texto);">R$ 0,00</div>
+                        </div>
+                        <div class="card" style="padding: 20px; border-left: 4px solid var(--cor-alerta);">
+                            <h3 style="margin: 0 0 10px 0; font-size: 13px; color: var(--texto-secundario); text-transform: uppercase;">Total Despesas Fixas</h3>
+                            <div class="valor despesa" id="display-despesas-fixas" style="font-size: 24px;">R$ 0,00</div>
+                        </div>
+                        <div class="card" style="padding: 20px; border-left: 4px solid var(--cor-primaria);">
+                            <h3 style="margin: 0 0 10px 0; font-size: 13px; color: var(--texto-secundario); text-transform: uppercase;">Total Receitas Fixas</h3>
+                            <div class="valor receita" id="display-receitas-fixas" style="font-size: 24px;">R$ 0,00</div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding: 20px; display: flex; flex-direction: column;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 14px; color: var(--texto-secundario); text-transform: uppercase;"><i class="fa-solid fa-chart-line"></i> Evolução Projetada</h3>
+                        <div style="flex: 1; min-height: 250px; position: relative;">
+                            <canvas id="graficoProjecao"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="meio-grid">
+                    
+                    <div class="form-container">
+                        <div style="margin-bottom: 15px;">
+                            <h3 style="margin: 0; color: var(--texto); font-size: 18px;">Nova Conta Recorrente</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 12px; color: var(--texto-secundario);">Cadastre assinaturas, salários ou compras parceladas.</p>
+                        </div>
+                        <form id="form-recorrente">
+                            <input type="text" id="desc-recorrente" placeholder="Descrição (ex: Aluguel, Netflix, TV)" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 10px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); box-sizing: border-box;">
+                            
+                            <input type="text" id="valor-recorrente" inputmode="numeric" placeholder="Valor (R$)" oninput="mascaraMoeda(this)" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 10px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); box-sizing: border-box;">
+                            
+                            <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                                <select id="tipo-recorrencia" onchange="toggleParcelas()" required style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
+                                    <option value="fixo">Mensal Fixo (Contas/Assinaturas)</option>
+                                    <option value="parcelado">Compra Parcelada</option>
+                                </select>
+                                
+                                <input type="number" id="qtd-parcelas" placeholder="Qtd." min="2" max="120" style="width: 80px; padding: 12px; border-radius: 10px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); display: none; box-sizing: border-box;">
+                            </div>
+
+                            <select id="tipo-lanc-recorrente" required style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto); box-sizing: border-box;">
+                                <option value="despesa">Despesa (Vou Pagar)</option>
+                                <option value="receita">Receita (Vou Receber)</option>
+                            </select>
+
+                            <div style="margin-bottom: 15px; background: var(--fundo); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;">
+                                <span style="color: var(--texto-secundario); font-size: 13px; font-weight: 600;">Data do 1º Lançamento:</span>
+                                <input type="date" id="data-inicio-recorrente" required style="padding: 8px; border: none; background: transparent; color: var(--texto); outline: none; cursor: pointer; font-family: inherit;">
+                            </div>
+
+                            <button type="submit" style="width: 100%; padding: 12px 15px; background: var(--gradiente-btn); color: white; border: none; border-radius: 10px; font-weight: bold; font-family: 'Poppins', sans-serif; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(9, 132, 227, 0.3);">
+                                Configurar Automação
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="card" style="padding: 20px; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0; color: var(--texto); font-size: 16px;">Automações Ativas</h3>
+                            <span style="background: rgba(9, 132, 227, 0.1); color: #0984e3; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;">Simulador</span>
+                        </div>
+                        
+                        <div style="flex: 1; overflow-y: auto; max-height: 380px; padding-right: 5px; scrollbar-width: thin;">
+                            <ul id="lista-recorrentes" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+                                
+                                <li style="display: flex; justify-content: space-between; align-items: center; background: var(--fundo); padding: 12px 15px; border-radius: 8px; border-left: 4px solid #ff7675; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="display: flex; gap: 12px; align-items: center;">
+                                        <button title="Excluir Recorrência" style="background: none; border: none; color: var(--texto-secundario); cursor: pointer; opacity: 0.5;"><i class="fa-solid fa-trash"></i></button>
+                                        <div>
+                                            <div style="color: var(--texto); font-weight: 600; font-size: 13px;">Netflix Premium</div>
+                                            <div style="color: var(--texto-secundario); font-size: 11px; margin-top: 3px;"><i class="fa-solid fa-repeat"></i> Mensal Fixo (Todo dia 10)</div>
+                                        </div>
+                                    </div>
+                                    <div style="font-weight: 700; color: var(--cor-alerta); font-size: 14px;">- R$ 55,90</div>
+                                </li>
+
+                                <li style="display: flex; justify-content: space-between; align-items: center; background: var(--fundo); padding: 12px 15px; border-radius: 8px; border-left: 4px solid #ff7675; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="display: flex; gap: 12px; align-items: center;">
+                                        <button title="Excluir Recorrência" style="background: none; border: none; color: var(--texto-secundario); cursor: pointer; opacity: 0.5;"><i class="fa-solid fa-trash"></i></button>
+                                        <div>
+                                            <div style="color: var(--texto); font-weight: 600; font-size: 13px;">iPhone 15 Pro</div>
+                                            <div style="color: var(--texto-secundario); font-size: 11px; margin-top: 3px;"><i class="fa-solid fa-credit-card"></i> Parcela 3 de 12</div>
+                                        </div>
+                                    </div>
+                                    <div style="font-weight: 700; color: var(--cor-alerta); font-size: 14px;">- R$ 680,00</div>
+                                </li>
+
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="aba-configuracoes" class="conteudo-aba">
+                <div id="area-admin" style="display: none; background: var(--cartao); padding: 25px; border-radius: 15px; margin-bottom: 25px; border: 1px solid var(--cor-primaria);">
+                    <h3 style="color: var(--texto); margin-bottom: 15px; font-size: 18px;"><i class="fa-solid fa-user-shield"></i> Gestão de Acessos</h3>
+                    <form id="form-cadastro-admin" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="email" id="novo-email-admin" placeholder="E-mail do novo usuário" required style="flex: 1; min-width: 200px; padding: 12px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
+                        <input type="password" id="nova-senha-admin" placeholder="Senha inicial" required style="padding: 12px; border-radius: 8px; border: 1px solid #dfe6e9; background: var(--fundo); color: var(--texto);">
+                        <button type="submit" style="padding: 12px 25px; border-radius: 8px; background: var(--gradiente-btn); color: white; border: none; cursor: pointer; font-weight: bold;">Cadastrar Operador</button>
+                    </form>
+                    <p id="msg-sucesso-admin" style="color: var(--cor-primaria); font-size: 13px; margin-top: 15px; display: none; font-weight: bold;">✅ Usuário cadastrado com sucesso!</p>
+                </div>
+                
+                <div class="card">
+                    <h3 style="color: var(--texto); margin-bottom: 15px; font-size: 16px;"><i class="fa-solid fa-sliders"></i> Atalhos do Sistema</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <button onclick="abrirModal()" style="padding: 10px 20px; border-radius: 8px; background: var(--fundo); border: 1px solid #dfe6e9; color: var(--texto); cursor: pointer; font-weight: 600;"><i class="fa-solid fa-tags" style="color: var(--cor-primaria);"></i> Organizar Categorias</button>
+                        <button onclick="document.getElementById('modal-contas').style.display='flex';" style="padding: 10px 20px; border-radius: 8px; background: var(--fundo); border: 1px solid #dfe6e9; color: var(--texto); cursor: pointer; font-weight: 600;"><i class="fa-solid fa-building-columns" style="color: #8A05BE;"></i> Organizar Contas</button>
+                    </div>
+                </div>
+            </div>
+
+        </div> </div>
+
     <div id="modal-contas" class="modal-overlay">
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(150,150,150,0.2); padding-bottom: 15px;">
@@ -338,8 +459,7 @@
                 <button type="button" id="btn-salvar-conta" style="background: var(--cor-primaria); color: white; border: none; padding: 0 15px; height: 40px; border-radius: 8px; font-weight: bold; cursor: pointer;">Salvar</button>
             </div>
             
-            <ul id="lista-contas" style="list-style: none; padding: 0; max-height: 250px; overflow-y: auto; padding-right: 5px;">
-                </ul>
+            <ul id="lista-contas" style="list-style: none; padding: 0; max-height: 250px; overflow-y: auto; padding-right: 5px;"></ul>
         </div>
     </div>
 

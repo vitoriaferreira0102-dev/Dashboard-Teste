@@ -1,0 +1,3 @@
+Diferenças do modulo PRIVADO:
+
+1 - o mestre Não consegue ver o banco e a categoria de todos mas consegue ver todos os lançamentos

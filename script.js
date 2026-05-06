@@ -130,13 +130,18 @@ window.excluirConta = async function(docId, nomeConta) {
 };
 
 // 4. O Ouvinte que atualiza TUDO ao mesmo tempo (Contas)
-// 4. O Ouvinte que atualiza TUDO ao mesmo tempo (Contas)
 let ouvinteContas = null;
 
 function iniciarOuvinteContas() {
     if (ouvinteContas) ouvinteContas(); // Limpa se já existir, para não duplicar
 
-    ouvinteContas = onSnapshot(carteirasRef, (snapshot) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // AGORA SIM: Todo mundo (incluindo o Mestre) só puxa os seus próprios bancos!
+    const consultaContas = query(carteirasRef, where("userId", "==", user.uid));
+
+    ouvinteContas = onSnapshot(consultaContas, (snapshot) => {
         const selectConta = document.getElementById('conta');
         const selectFiltroConta = document.getElementById('filtro-conta'); 
         const listaModal = document.getElementById('lista-contas');
@@ -155,7 +160,7 @@ function iniciarOuvinteContas() {
             listaDeContas.push({ id: docSnap.id, ...docSnap.data() });
         });
 
-        // PASSO 2: Ordena matematicamente pelo carimbo 'ordem' (Quem for novo vai pro final: 9999)
+        // PASSO 2: Ordena matematicamente pelo carimbo 'ordem'
         listaDeContas.sort((a, b) => (a.ordem ?? 9999) - (b.ordem ?? 9999));
 
         // PASSO 3: Desenha tudo na tela, agora na ordem rigorosa
@@ -354,93 +359,97 @@ let sortableInstance = null;
 let ouvinteCategorias = null;
 function iniciarOuvinteCategorias() {
     if (ouvinteCategorias) ouvinteCategorias(); // Limpa se já existir
-    ouvinteCategorias = onSnapshot(categoriasRef, (snapshot) => {
-        onSnapshot(categoriasRef, (snapshot) => {
-            const selectForm = document.getElementById('categoria');
-            const selectFiltro = document.getElementById('filtro-categoria');
-            const listaModal = document.getElementById('lista-categorias-modal') || document.getElementById('lista-categorias'); 
+    
+    const user = auth.currentUser;
+    if (!user) return;
 
-            const categoriaSelecionadaAntes = selectForm ? selectForm.value : 'Geral';
+    // AGORA SIM: Todo mundo (incluindo o Mestre) só puxa suas próprias categorias!
+    const consultaCat = query(categoriasRef, where("userId", "==", user.uid));
 
-            // Zera as variáveis para reconstruir com dados frescos da nuvem
-            categorias = ['Geral'];
-            coresCategorias = { 'Geral': '#b2bec3' };
+    ouvinteCategorias = onSnapshot(consultaCat, (snapshot) => {
+        const selectForm = document.getElementById('categoria');
+        const selectFiltro = document.getElementById('filtro-categoria');
+        const listaModal = document.getElementById('lista-categorias-modal') || document.getElementById('lista-categorias'); 
 
-            if (selectForm) selectForm.innerHTML = '';
-            if (selectFiltro) selectFiltro.innerHTML = '<option value="todas">Todas as Categorias</option>';
-            if (listaModal) listaModal.innerHTML = '';
+        const categoriaSelecionadaAntes = selectForm ? selectForm.value : 'Geral';
 
-            // A. Carrega as categorias do Firebase
-            snapshot.forEach((docSnap) => {
-                const cat = docSnap.data();
-                const id = docSnap.id;
-                
-                if(cat.nome !== 'Geral' && !categorias.includes(cat.nome)) {
-                    categorias.push(cat.nome);
-                    coresCategorias[cat.nome] = cat.cor || '#b2bec3';
-                }
-                // Guarda o ID do Firebase escondido para podermos editar/excluir depois
-                coresCategorias[cat.nome + '_id'] = id; 
-            });
+        // Zera as variáveis para reconstruir com dados frescos da nuvem
+        categorias = ['Geral'];
+        coresCategorias = { 'Geral': '#b2bec3' };
 
-            // B. Renderiza tudo na tela
-            categorias.forEach((cat) => {
-                let corDaCategoria = coresCategorias[cat];
-                let idDoBanco = coresCategorias[cat + '_id']; 
+        if (selectForm) selectForm.innerHTML = '';
+        if (selectFiltro) selectFiltro.innerHTML = '<option value="todas">Todas as Categorias</option>';
+        if (listaModal) listaModal.innerHTML = '';
 
-                // Injeta nos selects (Com a cor no texto!)
-                if (selectForm) selectForm.innerHTML += `<option value="${cat}" style="color: ${corDaCategoria}; font-weight: 600;">${cat}</option>`;
-                if (selectFiltro) selectFiltro.innerHTML += `<option value="${cat}">${cat}</option>`;
-                
-                let htmlBolinhaColorida = `<span style="width: 12px; height: 12px; border-radius: 50%; background-color: ${corDaCategoria}; display: inline-block;"></span>`;
-
-                // Injeta no Modal
-                if (listaModal) {
-                    if (cat !== 'Geral') {
-                        listaModal.innerHTML += `
-                            <li class="item-categoria drag-item" data-nome="${cat}" data-id="${idDoBanco}">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <i class="fa-solid fa-grip-lines drag-handle" title="Arraste para reordenar" style="cursor: grab; color: #dfe6e9; padding: 5px 10px; font-size: 16px;"></i>
-                                    ${htmlBolinhaColorida}
-                                    <span style="font-weight: 500; color: var(--texto);">${cat}</span>
-                                </div>
-                                <div style="display: flex; gap: 15px; align-items: center;">
-                                    <i class="fa-solid fa-pen" style="color: #0984e3; cursor: pointer; padding: 5px;" onclick="prepararEdicaoCategoria('${idDoBanco}', '${cat}', '${corDaCategoria}')" title="Editar"></i>
-                                    <button class="btn-del-cat" onclick="removerCategoria('${idDoBanco}', '${cat}')" title="Excluir" style="background: transparent; border: none; margin: 0; padding: 0;"><i class="fa-solid fa-trash" style="color: #ff7675; cursor: pointer; padding: 5px;"></i></button>
-                                </div>
-                            </li>
-                        `;
-                    } else {
-                        listaModal.innerHTML += `
-                            <li class="item-categoria fixed-item" data-nome="${cat}">
-                                <div style="display: flex; align-items: center; gap: 10px; padding-left: 26px;">
-                                    ${htmlBolinhaColorida}
-                                    <span style="font-weight: 500; color: var(--texto);">${cat}</span>
-                                </div>
-                                <span style="color: var(--texto-secundario); font-size: 12px; margin-right: 10px;">(Padrão Fixo)</span>
-                            </li>
-                        `;
-                    }
-                }
-            });
-
-            // Devolve a seleção que o usuário estava usando
-            if (selectForm && categorias.includes(categoriaSelecionadaAntes)) {
-                selectForm.value = categoriaSelecionadaAntes;
-            }
+        // A. Carrega as categorias do Firebase
+        snapshot.forEach((docSnap) => {
+            const cat = docSnap.data();
+            const id = docSnap.id;
             
-            if (typeof atualizarCorDaCaixaDeSelecao === 'function') atualizarCorDaCaixaDeSelecao(); 
-
-            if (listaModal) {
-                if (sortableInstance) sortableInstance.destroy(); 
-                sortableInstance = new Sortable(listaModal, {
-                    animation: 150, handle: '.drag-handle', filter: '.fixed-item'
-                });
+            if(cat.nome !== 'Geral' && !categorias.includes(cat.nome)) {
+                categorias.push(cat.nome);
+                coresCategorias[cat.nome] = cat.cor || '#b2bec3';
             }
-            
-            // Atualiza os gráficos com as novas cores
-            atualizarTela();
+            // Guarda o ID do Firebase escondido para podermos editar/excluir depois
+            coresCategorias[cat.nome + '_id'] = id; 
         });
+
+        // B. Renderiza tudo na tela
+        categorias.forEach((cat) => {
+            let corDaCategoria = coresCategorias[cat];
+            let idDoBanco = coresCategorias[cat + '_id']; 
+
+            // Injeta nos selects (Com a cor no texto!)
+            if (selectForm) selectForm.innerHTML += `<option value="${cat}" style="color: ${corDaCategoria}; font-weight: 600;">${cat}</option>`;
+            if (selectFiltro) selectFiltro.innerHTML += `<option value="${cat}">${cat}</option>`;
+            
+            let htmlBolinhaColorida = `<span style="width: 12px; height: 12px; border-radius: 50%; background-color: ${corDaCategoria}; display: inline-block;"></span>`;
+
+            // Injeta no Modal
+            if (listaModal) {
+                if (cat !== 'Geral') {
+                    listaModal.innerHTML += `
+                        <li class="item-categoria drag-item" data-nome="${cat}" data-id="${idDoBanco}">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-grip-lines drag-handle" title="Arraste para reordenar" style="cursor: grab; color: #dfe6e9; padding: 5px 10px; font-size: 16px;"></i>
+                                ${htmlBolinhaColorida}
+                                <span style="font-weight: 500; color: var(--texto);">${cat}</span>
+                            </div>
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <i class="fa-solid fa-pen" style="color: #0984e3; cursor: pointer; padding: 5px;" onclick="prepararEdicaoCategoria('${idDoBanco}', '${cat}', '${corDaCategoria}')" title="Editar"></i>
+                                <button class="btn-del-cat" onclick="removerCategoria('${idDoBanco}', '${cat}')" title="Excluir" style="background: transparent; border: none; margin: 0; padding: 0;"><i class="fa-solid fa-trash" style="color: #ff7675; cursor: pointer; padding: 5px;"></i></button>
+                            </div>
+                        </li>
+                    `;
+                } else {
+                    listaModal.innerHTML += `
+                        <li class="item-categoria fixed-item" data-nome="${cat}">
+                            <div style="display: flex; align-items: center; gap: 10px; padding-left: 26px;">
+                                ${htmlBolinhaColorida}
+                                <span style="font-weight: 500; color: var(--texto);">${cat}</span>
+                            </div>
+                            <span style="color: var(--texto-secundario); font-size: 12px; margin-right: 10px;">(Padrão Fixo)</span>
+                        </li>
+                    `;
+                }
+            }
+        });
+
+        // Devolve a seleção que o usuário estava usando
+        if (selectForm && categorias.includes(categoriaSelecionadaAntes)) {
+            selectForm.value = categoriaSelecionadaAntes;
+        }
+        
+        if (typeof atualizarCorDaCaixaDeSelecao === 'function') atualizarCorDaCaixaDeSelecao(); 
+
+        if (listaModal) {
+            if (sortableInstance) sortableInstance.destroy(); 
+            sortableInstance = new Sortable(listaModal, {
+                animation: 150, handle: '.drag-handle', filter: '.fixed-item'
+            });
+        }
+        
+        atualizarTela();
     });
 }
 
@@ -715,6 +724,8 @@ function atualizarTela() {
     if (typeof atualizarGraficoBarras === "function") atualizarGraficoBarras(transacoesFiltradas);
     if (typeof atualizarWidgetDinamico === "function") atualizarWidgetDinamico(transacoesFiltradas);
 
+    if (typeof atualizarProjecao === "function") atualizarProjecao();
+    if (typeof renderizarListaProjetada === "function") renderizarListaProjetada();
     renderizarCartoesDeContas();
 }
 
@@ -1859,6 +1870,448 @@ window.toggleFiltrosAvancados = function() {
 // Dá a partida assim que a tela carrega
 window.addEventListener('DOMContentLoaded', atualizarDisplayMes);
 
+// ==========================================
+// FUNÇÃO PARA LIMPAR TODOS OS FILTROS
+// ==========================================
+window.limparFiltros = function() {
+    // 1. Esvazia a barra de pesquisa
+    const inputBusca = document.getElementById('filtro-busca');
+    if (inputBusca) inputBusca.value = '';
+
+    // 2. Reseta os selects para o valor padrão
+    const selects = [
+        { id: 'filtro-tipo', padrao: 'todos' },
+        { id: 'filtro-categoria', padrao: 'todas' },
+        { id: 'filtro-conta', padrao: 'todas' },
+        { id: 'filtro-status', padrao: 'todos' },
+        { id: 'filtro-operador', padrao: 'todos' }
+    ];
+
+    selects.forEach(item => {
+        const elemento = document.getElementById(item.id);
+        if (elemento) elemento.value = item.padrao;
+    });
+
+    // 3. Esvazia as datas (o que reativa a Máquina do Tempo automaticamente!)
+    const dataInicio = document.getElementById('filtro-data-inicio');
+    const dataFim = document.getElementById('filtro-data-fim');
+    if (dataInicio) dataInicio.value = '';
+    if (dataFim) dataFim.value = '';
+
+    // 4. Se a sanfona estiver aberta, a gente pode dar a opção de fechar ela (opcional, vou manter aberta para o cliente ver que limpou)
+    // 5. Manda a tela calcular tudo de novo!
+    atualizarTela();
+    
+    // (Opcional) Tira o brilho de qualquer campo que estava aceso
+    const selectFiltroConta = document.getElementById('filtro-conta');
+    if (selectFiltroConta) {
+        selectFiltroConta.style.boxShadow = "none";
+        selectFiltroConta.style.borderColor = "rgba(255,255,255,0.1)";
+    }
+};
+
+window.abrirAba = function(idAbaDesejada, elementoBotao) {
+    // 1. Esconde todas as abas
+    const todasAbas = document.querySelectorAll('.conteudo-aba');
+    todasAbas.forEach(aba => aba.classList.remove('ativa'));
+
+    // 2. Tira a cor de 'ativo' de todos os botões
+    const todosBotoes = document.querySelectorAll('.tab-btn');
+    todosBotoes.forEach(btn => btn.classList.remove('ativo'));
+
+    // 3. Mostra a aba clicada e pinta o botão correspondente
+    document.getElementById(idAbaDesejada).classList.add('ativa');
+    elementoBotao.classList.add('ativo');
+
+    // MÁGICA: Se o usuário abrir a aba de Visão Geral, forçamos os gráficos a se redesenharem 
+    // para evitar bugs de renderização do Chart.js quando o canvas fica oculto (display: none)
+    if (idAbaDesejada === 'aba-visao-geral') {
+        atualizarTela(); 
+    }
+}
+
+// ==========================================
+// MÓDULO 3: INTERFACE DE PROJEÇÕES
+// ==========================================
+window.toggleParcelas = function() {
+    const tipo = document.getElementById('tipo-recorrencia').value;
+    const inputQtd = document.getElementById('qtd-parcelas');
+    
+    if (tipo === 'parcelado') {
+        inputQtd.style.display = 'block';
+        inputQtd.setAttribute('required', 'true');
+        // Dá um pequeno destaque visual para o usuário notar que o campo apareceu
+        inputQtd.style.animation = 'fadeIn 0.3s ease-in-out';
+    } else {
+        inputQtd.style.display = 'none';
+        inputQtd.removeAttribute('required');
+        inputQtd.value = ''; // Limpa o valor se a pessoa desistir do parcelamento
+    }
+};
+
+// ==========================================
+// CAPTURA DO FORMULÁRIO DE PROJEÇÕES E MOTOR
+// ==========================================
+const formRecorrente = document.getElementById('form-recorrente');
+
+if (formRecorrente) {
+    formRecorrente.addEventListener('submit', async function(e) {
+        e.preventDefault(); 
+
+        const descricao = document.getElementById('desc-recorrente').value;
+        const valor = converterMoedaParaNumero(document.getElementById('valor-recorrente').value);
+        const tipoRecorrencia = document.getElementById('tipo-recorrencia').value;
+        const qtdParcelas = parseInt(document.getElementById('qtd-parcelas').value) || 0;
+        const tipoLancamento = document.getElementById('tipo-lanc-recorrente').value;
+        const dataInicio = document.getElementById('data-inicio-recorrente').value;
+
+        const btn = formRecorrente.querySelector('button');
+        const textoOriginal = btn.innerText;
+        btn.innerText = "Processando Lançamentos...";
+        btn.style.background = "#f39c12";
+
+        try {
+            // Se for parcela, usa a quantidade informada. Se for conta fixa, projeta 12 meses pra frente.
+            const repeticoes = tipoRecorrencia === 'parcelado' ? qtdParcelas : 12; 
+            let promessasFirebase = [];
+
+            // Adiciona o T12:00:00 para o fuso horário do Brasil não engolir 1 dia na hora de calcular
+            const dataBase = new Date(dataInicio + 'T12:00:00');
+
+            // O LOOP MÁGICO: Roda X vezes e joga a data um mês pra frente a cada volta
+            for (let i = 0; i < repeticoes; i++) {
+                
+                let novaData = new Date(dataBase);
+                novaData.setMonth(novaData.getMonth() + i);
+                
+                // Formata a data de volta pro formato do banco (YYYY-MM-DD)
+                let ano = novaData.getFullYear();
+                let mes = String(novaData.getMonth() + 1).padStart(2, '0');
+                let dia = String(novaData.getDate()).padStart(2, '0');
+                let dataFormatada = `${ano}-${mes}-${dia}`;
+                
+                // Se for parcelado, adiciona o número da parcela no nome (ex: iPhone 15 (1/10))
+                let descFinal = tipoRecorrencia === 'parcelado' ? `${descricao} (${i + 1}/${qtdParcelas})` : descricao;
+                
+                let novaTransacao = {
+                    descricao: descFinal,
+                    valor: valor,
+                    tipo: tipoLancamento,
+                    data: dataFormatada,
+                    conta: "", // Deixamos vazio para o usuário categorizar quando for pagar
+                    categoria: "Geral", 
+                    userId: auth.currentUser.uid, 
+                    nomeUsuario: auth.currentUser.displayName || "Operador Simulador",
+                    status: "pendente", // Projeções nascem pendentes por padrão
+                    timestamp: Date.now() + i // O "+ i" evita que os arquivos tenham o mesmíssimo milissegundo
+                };
+                
+                // Prepara a bomba: empilha todas as ordens de salvamento
+                promessasFirebase.push(addDoc(transacoesRef, novaTransacao));
+            }
+
+            // Dispara todas as ordens para o banco de dados ao mesmo tempo!
+            await Promise.all(promessasFirebase);
+
+            formRecorrente.reset();
+            document.getElementById('qtd-parcelas').style.display = 'none';
+
+            btn.innerText = "Sucesso!";
+            btn.style.background = "#00b894";
+
+            setTimeout(() => {
+                btn.innerText = textoOriginal;
+                btn.style.background = "var(--gradiente-btn)";
+            }, 2000);
+
+        } catch (erro) {
+            console.error("Erro ao gerar parcelas:", erro);
+            alert("Ocorreu um erro ao gerar a projeção no banco de dados.");
+            btn.innerText = textoOriginal;
+            btn.style.background = "var(--gradiente-btn)";
+        }
+    });
+}
+
+// ==========================================
+// MÓDULO 3: MOTOR DO GRÁFICO DE PROJEÇÕES E RESUMO
+// ==========================================
+let graficoProjecaoCaixa = null;
+
+window.atualizarProjecao = function() {
+    const ctx = document.getElementById('graficoProjecao');
+    if (!ctx) return; // Se a aba não estiver carregada direito, ignora
+
+    // Quantos meses para frente vamos olhar? (Vem do menu dropdown)
+    const mesesParaProjetar = parseInt(document.getElementById('filtro-meses-projecao').value) || 3;
+    
+    // 1. Descobrir o Saldo Atual (Tudo que já foi pago ou que a data é anterior a hoje)
+    let saldoAtual = 0;
+    const dataHoje = new Date(); 
+    const stringHoje = getDataHoje(); // Sua função que já pega a data atual YYYY-MM-DD
+
+    // 2. Variáveis para os cartões de resumo (Futuro)
+    let somaDespesasFixas = 0;
+    let somaReceitasFixas = 0;
+
+    // 3. Estruturas para o gráfico
+    let labelsMeses = [];
+    let dadosSaldo = []; 
+    let fluxoMensal = new Array(mesesParaProjetar).fill().map(() => ({ receita: 0, despesa: 0 }));
+
+    // O "Pente Fino": Varre todas as transações que o Firebase mandou
+    transacoes.forEach(t => {
+        if (t.status === 'cancelado') return; // Ignora o lixo
+        
+        const valor = parseFloat(t.valor) || 0;
+
+        // Se já passou ou tá pago, forma o nosso saldo de partida hoje
+        if (t.data <= stringHoje || t.status === 'pago') {
+            if (t.tipo === 'receita') saldoAtual += valor;
+            else saldoAtual -= valor;
+        } 
+        else {
+            // É FUTURO! Vamos calcular em qual mês cai
+            const dataT = new Date(t.data + 'T12:00:00'); // T12:00:00 evita bugs de fuso horário
+            
+            const diffAnos = dataT.getFullYear() - dataHoje.getFullYear();
+            const diffMeses = (diffAnos * 12) + (dataT.getMonth() - dataHoje.getMonth());
+
+            // Se cair dentro da nossa janela de projeção (3, 6 ou 12 meses)
+            if (diffMeses >= 0 && diffMeses < mesesParaProjetar) {
+                if (t.tipo === 'receita') {
+                    fluxoMensal[diffMeses].receita += valor;
+                    somaReceitasFixas += valor;
+                } else {
+                    fluxoMensal[diffMeses].despesa += valor;
+                    somaDespesasFixas += valor;
+                }
+            }
+        }
+    });
+
+    // 4. Montar a progressão mês a mês para desenhar a linha
+    let saldoAcumulado = saldoAtual;
+    const nomesMesesCurto = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    for (let i = 0; i < mesesParaProjetar; i++) {
+        let mesAlvo = new Date(dataHoje.getFullYear(), dataHoje.getMonth() + i, 1);
+        labelsMeses.push(`${nomesMesesCurto[mesAlvo.getMonth()]}/${mesAlvo.getFullYear().toString().slice(-2)}`);
+        
+        // A matemática do mês: Saldo que tinha + Receitas do Mês - Despesas do Mês
+        saldoAcumulado += fluxoMensal[i].receita - fluxoMensal[i].despesa;
+        dadosSaldo.push(saldoAcumulado);
+    }
+
+    // 5. Escrever nos painéis HTML
+    document.getElementById('display-saldo-previsto').innerText = formatarMoedaBR(saldoAcumulado);
+    document.getElementById('display-despesas-fixas').innerText = formatarMoedaBR(somaDespesasFixas);
+    document.getElementById('display-receitas-fixas').innerText = formatarMoedaBR(somaReceitasFixas);
+
+    // Se o saldo final der negativo, o texto fica em vermelho de alerta!
+    document.getElementById('display-saldo-previsto').style.color = saldoAcumulado < 0 ? 'var(--cor-alerta)' : 'var(--cor-primaria)';
+
+    // 6. Desenhar o Gráfico (Chart.js)
+    if (graficoProjecaoCaixa) graficoProjecaoCaixa.destroy(); // Limpa o antigo
+    
+    // A cor da linha acompanha o status da conta
+    const corLinha = saldoAcumulado < 0 ? '#ff7675' : '#0984e3';
+    const corFundo = saldoAcumulado < 0 ? 'rgba(255, 118, 117, 0.1)' : 'rgba(9, 132, 227, 0.1)';
+
+    graficoProjecaoCaixa = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labelsMeses,
+            datasets: [{
+                label: 'Caixa Estimado',
+                data: dadosSaldo,
+                borderColor: corLinha,
+                backgroundColor: corFundo,
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4, // Deixa a linha suave e curva
+                pointBackgroundColor: corLinha,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { ticks: { color: 'var(--texto-secundario)' }, grid: { color: 'rgba(150, 150, 150, 0.1)' } },
+                x: { ticks: { color: 'var(--texto-secundario)', font: {weight: 'bold'} }, grid: { display: false } }
+            }
+        }
+    });
+};
+
+// ==========================================
+// MÓDULO 3: LISTA DE LANÇAMENTOS FUTUROS (AGRUPADA EM SANFONA)
+// ==========================================
+window.renderizarListaProjetada = function() {
+    const listaHTML = document.getElementById('lista-recorrentes');
+    if (!listaHTML) return;
+    
+    listaHTML.innerHTML = '';
+    const hoje = getDataHoje();
+    
+    // 1. O Detetive: Objeto para agrupar as contas pelo "Nome Base"
+    let grupos = {};
+
+    transacoes.forEach(t => {
+        let isParcelado = false;
+        let nomeBase = t.descricao;
+
+        // MÁGICA DO REGEX: Procura o padrão "(1/10)" no nome da conta
+        const regex = /(.+?)\s*\((\d+)\/(\d+)\)/;
+        const match = t.descricao.match(regex);
+
+        if (match) {
+            isParcelado = true;
+            nomeBase = match[1].trim(); // Extrai só o "iphone 17 esposa"
+        }
+
+        // Regra de Ouro: Puxa todas as parcelas (mesmo as pagas) OU fixas que estão no futuro
+        if (isParcelado || (t.status === 'pendente' && t.data >= hoje)) {
+            
+            // Se o grupo ainda não existe, cria a "pasta" dele
+            if (!grupos[nomeBase]) {
+                grupos[nomeBase] = {
+                    nome: nomeBase,
+                    tipo: t.tipo,
+                    isParcelado: isParcelado,
+                    totalParcelas: isParcelado ? parseInt(match[3], 10) : null,
+                    valorParcela: parseFloat(t.valor) || 0,
+                    itens: []
+                };
+            }
+            
+            // Joga a transação dentro da pasta do grupo
+            grupos[nomeBase].itens.push(t);
+        }
+    });
+
+    // 2. Filtra e Ordena os Grupos
+    let gruposAtivos = [];
+
+    for (const key in grupos) {
+        let grupo = grupos[key];
+        
+        // Coloca os itens do grupo em ordem de data (da mais antiga pra mais nova)
+        grupo.itens.sort((a, b) => a.data > b.data ? 1 : -1);
+
+        // Verifica se o grupo ainda tem alguma conta pendente. Se estiver tudo pago, some da tela!
+        const temPendente = grupo.itens.some(item => item.status === 'pendente');
+        if (temPendente) {
+            gruposAtivos.push(grupo);
+        }
+    }
+
+    if (gruposAtivos.length === 0) {
+        listaHTML.innerHTML = '<li style="text-align: center; color: var(--texto-secundario); padding: 20px;">Nenhuma automação ativa no momento.</li>';
+        return;
+    }
+
+    // 3. Desenha o HTML Dinâmico (A Sanfona)
+    gruposAtivos.forEach((grupo, index) => {
+        const idSanfona = `sanfona-grupo-${index}`;
+
+        // Descobre qual é a PRÓXIMA conta que o usuário tem que pagar
+        const proximaParcela = grupo.itens.find(item => item.status === 'pendente');
+        const dataBrProxima = proximaParcela ? proximaParcela.data.split('-').reverse().join('/') : 'Concluído';
+
+        const corBorda = grupo.tipo === 'receita' ? '#00b894' : '#ff7675';
+        const sinal = grupo.tipo === 'receita' ? '+' : '-';
+
+        // Lógica visual: Ícones e Textos diferentes para Fixo x Parcelado
+        let textoTotal = '';
+        let iconeTipo = '';
+
+        if (grupo.isParcelado) {
+            const valorTotal = grupo.valorParcela * grupo.totalParcelas;
+            textoTotal = `<div style="font-size: 11px; color: var(--texto-secundario);">Total: ${formatarMoedaBR(valorTotal)}</div>`;
+            iconeTipo = '<i class="fa-solid fa-credit-card"></i>';
+        } else {
+            textoTotal = `<div style="font-size: 11px; color: var(--texto-secundario);">Mensal Fixo</div>`;
+            iconeTipo = '<i class="fa-solid fa-repeat"></i>';
+        }
+
+        // Monta as "linhas de dentro" (Os itens da sanfona)
+        let htmlItensInternos = '';
+        grupo.itens.forEach(item => {
+            const isPago = item.status === 'pago';
+            const estiloRiscado = isPago ? 'text-decoration: line-through; opacity: 0.4;' : '';
+            const iconeStatus = isPago ? '<i class="fa-solid fa-check-circle" style="color: #00b894;"></i>' : '<i class="fa-regular fa-circle" style="color: var(--texto-secundario);"></i>';
+            const dataBrItem = item.data.split('-').reverse().join('/');
+
+            htmlItensInternos += `
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px 10px 45px; border-top: 1px solid rgba(150,150,150,0.1); ${estiloRiscado}">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="removerTransacao('${item.id}')" title="Excluir Parcela" style="background: none; border: none; color: var(--texto-secundario); cursor: pointer; transition: 0.3s; padding: 0;" onmouseover="this.style.color='var(--cor-alerta)'" onmouseout="this.style.color='var(--texto-secundario)'">
+                            <i class="fa-solid fa-trash" style="font-size: 11px;"></i>
+                        </button>
+                        <div style="font-size: 12px; color: var(--texto); font-weight: 500;">${iconeStatus} ${item.descricao}</div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--texto-secundario); font-weight: 600;">${dataBrItem}</div>
+                </li>
+            `;
+        });
+
+        // Monta o Cartão Principal (O Header da Sanfona)
+        listaHTML.innerHTML += `
+            <li style="background: var(--fundo); border-radius: 10px; border-left: 4px solid ${corBorda}; border-bottom: 1px solid rgba(150,150,150,0.1); overflow: hidden; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                
+                <div onclick="toggleSanfona('${idSanfona}')" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.backgroundColor='rgba(150,150,150,0.05)'" onmouseout="this.style.backgroundColor='transparent'">
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <div style="background: rgba(150,150,150,0.1); width: 38px; height: 38px; border-radius: 8px; display: flex; justify-content: center; align-items: center; color: ${corBorda}; font-size: 16px;">
+                            ${iconeTipo}
+                        </div>
+                        <div>
+                            <div style="color: var(--texto); font-weight: 700; font-size: 14px; text-transform: uppercase;">${grupo.nome}</div>
+                            <div style="color: var(--texto-secundario); font-size: 11px; margin-top: 3px; font-weight: 500;">
+                                Próxima: <span style="color: var(--texto);">${dataBrProxima}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
+                        <div>
+                            <div style="font-weight: 700; color: ${corBorda}; font-size: 15px;">${sinal} ${formatarMoedaBR(grupo.valorParcela)}</div>
+                            ${textoTotal}
+                        </div>
+                        <div style="background: rgba(150,150,150,0.1); padding: 5px; border-radius: 5px;">
+                            <i id="icone-${idSanfona}" class="fa-solid fa-chevron-down" style="color: var(--texto-secundario); transition: transform 0.3s; font-size: 12px;"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <ul id="${idSanfona}" style="list-style: none; padding: 0; margin: 0; display: none; background: rgba(150,150,150,0.03);">
+                    ${htmlItensInternos}
+                </ul>
+            </li>
+        `;
+    });
+};
+
+// FUNÇÃO PARA ABRIR/FECHAR A SANFONA
+window.toggleSanfona = function(id) {
+    const gaveta = document.getElementById(id);
+    const icone = document.getElementById('icone-' + id);
+    
+    if (gaveta.style.display === 'none' || gaveta.style.display === '') {
+        gaveta.style.display = 'block';
+        icone.style.transform = 'rotate(180deg)';
+        gaveta.style.animation = 'fadeIn 0.3s ease';
+    } else {
+        gaveta.style.display = 'none';
+        icone.style.transform = 'rotate(0deg)';
+    }
+};
+
+// Faz o menu de "X meses" disparar o recálculo imediatamente quando você muda a opção
+document.getElementById('filtro-meses-projecao').addEventListener('change', atualizarProjecao);
+
 // --- 12. A CHAVE MESTRA: EXPORTANDO FUNÇÕES PARA O HTML ---
 window.toggleTheme = toggleTheme;
 window.definirMeta = definirMeta;
@@ -1888,6 +2341,9 @@ window.alterarItensPorPagina = alterarItensPorPagina;
 window.mudarPagina = mudarPagina;
 window.alternarWidget = alternarWidget;
 window.toggleFiltrosAvancados = toggleFiltrosAvancados;
+window.limparFiltros = limparFiltros;
+window.abrirAba = abrirAba;
+
 
 // --- 9. INICIA O SISTEMA ---
 atualizarTela();
