@@ -14,6 +14,17 @@ const firebaseConfig = {
   // Removi o analytics para manter o app focado em performance
 };
 
+// ==========================================
+// FORMATADOR GLOBAL DE MOEDA BRASILEIRA (UX PREMIUM)
+// ==========================================
+window.formatarMoedaBR = function(valor) {
+    const numero = parseFloat(valor) || 0;
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(numero);
+};
+
 // Ligando o motor
 const app = initializeApp(firebaseConfig);
 
@@ -37,17 +48,17 @@ const categoriasRef = collection(db, nomeColecaoCategorias);
 let categoriaEmEdicaoId = null; 
 
 // SISTEMA DE CARTEIRA SALVO NO BANCO
-const nomeColecaoCarteiras = rodandoNoComputador ? "carteiras_empresa_teste" : "carteiras_empresa_oficial";
+const nomeColecaoCarteiras = rodandoNoComputador ? "banco_teste" : "banco_oficial";
 const carteirasRef = collection(db, nomeColecaoCarteiras);
 let sortableContasInstance = null;
 
-const nomeDaColecao = rodandoNoComputador ? "Empresa_Teste" : "Empresa_Oficial";
+const nomeDaColecao = rodandoNoComputador ? "Privado_teste" : "Privado_oficial";
 const transacoesRef = collection(db, nomeDaColecao);
 
 if (rodandoNoComputador) {
-    console.warn("🛠️ MODO DESENVOLVIMENTO: Gravando na pasta 'Empresa_Teste'");
+    console.warn("🛠️ MODO DESENVOLVIMENTO: Gravando na pasta 'Privado_Teste'");
 } else {
-    console.log("🚀 MODO PRODUÇÃO: Conectado ao banco oficial!");
+    console.log("🚀 MODO PRODUÇÃO: Conectado ao banco Privado_oficial!");
 }
 
 // 1. Abrir e Fechar Modal
@@ -230,8 +241,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 let metaNome = localStorage.getItem('metaNome') || 'Meta do Período';
 let metaFinanceira = parseFloat(localStorage.getItem('metaFinanceira')) || 0;
-let meuGrafico = null;
-let meuGraficoBarras = null;
+let graficoRosca = null;
+let graficoRoscaBarras = null;
 
 // --- 2. CAPTURANDO ELEMENTOS ---
 const form = document.getElementById('form-transacao');
@@ -318,7 +329,7 @@ function definirMeta() {
 
 function atualizarProgressoMeta(faturamentoTotal) {
     document.getElementById('nome-meta-display').innerText = metaNome;
-    document.getElementById('display-meta').innerText = `R$ ${metaFinanceira.toFixed(2)}`;
+    document.getElementById('display-meta').innerText = formatarMoedaBR(metaFinanceira);
 
     const barra = document.getElementById('barra-progresso');
     const texto = document.getElementById('texto-progresso');
@@ -549,7 +560,28 @@ function atualizarTela() {
         const statusDaTransacao = transacao.status || 'pago'; 
         const passaStatus = (filtroStatus === 'todos' || statusDaTransacao === filtroStatus);
 
-        if (passaTipo && passaCategoria && passaConta && passaData && passaBusca && passaValor && passaOperador && passaStatus) {
+        // ==================================================
+        // NOVA REGRA: MÁQUINA DO TEMPO
+        // ==================================================
+        let passaNavegacao = false;
+        
+        if (transacao.data) {
+            const partesData = transacao.data.split('-'); // Ex: '2026-05-22'
+            const anoTransacao = parseInt(partesData[0], 10);
+            const mesTransacao = parseInt(partesData[1], 10) - 1; // No JS, Janeiro é 0 e Dezembro é 11
+            
+            const usandoFiltroAvancado = (filtroDataInicio !== '' || filtroDataFim !== '');
+            
+            if (usandoFiltroAvancado) {
+                // Se a pessoa preencheu a data no menu lateral, a máquina do tempo desliga temporariamente
+                passaNavegacao = true; 
+            } else {
+                // Se não preencheu, obedece o mês que está na tela!
+                passaNavegacao = (anoTransacao === dataAtualNavegacao.getFullYear() && mesTransacao === dataAtualNavegacao.getMonth());
+            }
+        }
+
+        if (passaTipo && passaCategoria && passaConta && passaData && passaBusca && passaValor && passaOperador && passaStatus && passaNavegacao) {
             transacoesFiltradas.push(transacao);
         }
     });
@@ -571,15 +603,41 @@ function atualizarTela() {
         return tempoB - tempoA; 
     });
 
-    // 3. RENDERIZAÇÃO DA TABELA
+    // ==========================================
+    // 3. CÁLCULO DE TOTAIS E PAGINAÇÃO
+    // ==========================================
+    
+    // A. Primeiro, calcula a matemática com TODO MUNDO (Mês inteiro)
     transacoesFiltradas.forEach((transacao) => {
         const valorSeguro = parseFloat(transacao.valor) || 0;
         const statusDaTransacao = transacao.status || 'pago';
         const valorParaCalculo = statusDaTransacao === 'cancelado' ? 0 : valorSeguro;
 
-        if(transacao.tipo === 'receita') totalReceitas += valorParaCalculo;
+        if (transacao.tipo === 'receita') totalReceitas += valorParaCalculo;
         else totalDespesas += valorParaCalculo;
+    });
 
+    // B. Corta a fatia exata para a página atual
+    let transacoesDaPagina = transacoesFiltradas;
+    const totalItensFiltrados = transacoesFiltradas.length;
+
+    if (itensPorPagina !== 'todos') {
+        const limite = parseInt(itensPorPagina, 10);
+        const totalPaginasPossiveis = Math.ceil(totalItensFiltrados / limite) || 1;
+        
+        // Segurança: se o cara estava na pág 5 e mudou de mês, o sistema puxa de volta pra pág 1
+        if (paginaAtual > totalPaginasPossiveis) paginaAtual = 1; 
+
+        const inicio = (paginaAtual - 1) * limite;
+        const fim = inicio + limite;
+        transacoesDaPagina = transacoesFiltradas.slice(inicio, fim);
+    }
+
+    // C. Desenha NA TELA apenas a fatia cortada
+    transacoesDaPagina.forEach((transacao) => {
+        const valorSeguro = parseFloat(transacao.valor) || 0;
+        const statusDaTransacao = transacao.status || 'pago';
+        
         let corStatusBg = '', corStatusTxt = '', textoStatus = '', iconeStatus = '', estiloLinha = '';
         if (statusDaTransacao === 'pendente') {
             corStatusBg = 'rgba(243, 156, 18, 0.15)'; corStatusTxt = '#d35400'; textoStatus = 'Pendente'; iconeStatus = '<i class="fa-solid fa-clock"></i>'; estiloLinha = 'opacity: 0.9;'; 
@@ -631,7 +689,7 @@ function atualizarTela() {
                  <span style="background: ${corDaConta}; padding: 6px 12px; border-radius: 12px; font-size: 11px; color: ${corTextoConta}; font-weight: 700;">${contaVisual}</span>
             </td>
             <td data-label="Tipo" style="color: ${transacao.tipo === 'receita' ? 'var(--cor-primaria)' : 'var(--cor-alerta)'}; font-weight: 600;">${transacao.tipo.toUpperCase()}</td>
-            <td data-label="Valor" style="font-weight: 700;">R$ ${valorSeguro.toFixed(2)}</td>
+            <td data-label="Valor" style="font-weight: 700;">${formatarMoedaBR(valorSeguro)}</td>
             <td data-label="Ações">
                 <div style="display: flex; gap: 15px; justify-content: center;">
                     <button onclick="prepararEdicao('${transacao.id}')" style="background:none; border:none; color:#0984e3; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
@@ -642,16 +700,20 @@ function atualizarTela() {
         corpoTabela.appendChild(tr);
     });
 
-    if (displayReceita) displayReceita.innerText = `R$ ${totalReceitas.toFixed(2)}`;
-    if (displayDespesa) displayDespesa.innerText = `R$ ${totalDespesas.toFixed(2)}`;
+    // D. Cria os botões [1] [2] [3] no HTML baseando no total de itens filtrados
+    renderizarPaginacao(totalItensFiltrados);
+
+    if (displayReceita) displayReceita.innerText = formatarMoedaBR(totalReceitas);
+    if (displayDespesa) displayDespesa.innerText = formatarMoedaBR(totalDespesas);
     if (displayLucro) {
         const lucro = totalReceitas - totalDespesas;
-        displayLucro.innerText = `R$ ${lucro.toFixed(2)}`;
+        displayLucro.innerText = formatarMoedaBR(lucro);
         displayLucro.style.color = lucro >= 0 ? 'var(--texto)' : 'var(--cor-alerta)';
     }
     if (typeof atualizarProgressoMeta === "function") atualizarProgressoMeta(totalReceitas);
     if (typeof atualizarGrafico === "function") atualizarGrafico(totalReceitas, totalDespesas);
     if (typeof atualizarGraficoBarras === "function") atualizarGraficoBarras(transacoesFiltradas);
+    if (typeof atualizarWidgetDinamico === "function") atualizarWidgetDinamico(transacoesFiltradas);
 
     renderizarCartoesDeContas();
 }
@@ -684,7 +746,7 @@ function renderizarCartoesDeContas() {
         });
 
         // Aplica o "blur" se o olho estiver fechado
-        const saldoFormatado = `R$ ${saldoConta.toFixed(2)}`;
+        const saldoFormatado = formatarMoedaBR(saldoConta);
         const classeOculto = saldosOcultos ? 'saldo-oculto' : '';
         const corSaldo = saldoConta < 0 ? 'var(--cor-alerta)' : 'var(--texto)'; // Fica vermelho se a conta ficar negativa
 
@@ -968,9 +1030,9 @@ async function mudarNome() {
 
 // --- 7. GRÁFICOS ---
 function atualizarGrafico(receitas, despesas) {
-    const ctx = document.getElementById('meuGrafico').getContext('2d');
-    if (meuGrafico) { meuGrafico.destroy(); }
-    meuGrafico = new Chart(ctx, {
+    const ctx = document.getElementById('graficoRosca').getContext('2d');
+    if (graficoRosca) { graficoRosca.destroy(); }
+    graficoRosca = new Chart(ctx, {
         type: 'doughnut',
         data: { labels: ['Receitas', 'Despesas'], datasets: [{ data: [receitas, despesas], backgroundColor: ['#00b894', '#ff7675'], borderWidth: 0 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Proporção do Filtro Atual' } }, cutout: '70%' }
@@ -980,7 +1042,7 @@ function atualizarGrafico(receitas, despesas) {
 // --- ATUALIZAÇÃO DO GRÁFICO DE BARRAS (CORES DINÂMICAS) ---
 function atualizarGraficoBarras(listaFiltrada) {
     const ctx = document.getElementById('graficoBarras').getContext('2d');
-    if (meuGraficoBarras) { meuGraficoBarras.destroy(); }
+    if (graficoRoscaBarras) { graficoRoscaBarras.destroy(); }
 
     const resumoCategorias = {};
     listaFiltrada.forEach(t => {
@@ -1002,7 +1064,7 @@ function atualizarGraficoBarras(listaFiltrada) {
     // A MÁGICA: Puxa o dicionário de cores e cria uma lista na mesma ordem das barras
     const coresDasCategorias = labels.map(cat => coresCategorias[cat] || '#b2bec3');
 
-    meuGraficoBarras = new Chart(ctx, {
+    graficoRoscaBarras = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -1162,7 +1224,7 @@ function prepararEdicao(id) {
     idEdicao = id;
 
     document.getElementById('descricao').value = t.descricao;
-    document.getElementById('valor').value = t.valor;
+    document.getElementById('valor').value = formatarMoedaBR(t.valor);
     document.getElementById('data').value = t.data;
     // NOVO: Puxa a Conta para o modo de Edição e já pinta a borda!
     if (t.conta) {
@@ -1202,7 +1264,7 @@ form.addEventListener('submit', async function(evento) {
 
 const dados = {
         descricao: document.getElementById('descricao').value,
-        valor: parseFloat(document.getElementById('valor').value),
+        valor: converterMoedaParaNumero(document.getElementById('valor').value),
         tipo: document.getElementById('tipo').value,
         data: document.getElementById('data').value || getDataHoje(),
         conta: document.getElementById('conta').value,
@@ -1529,6 +1591,227 @@ if (inputNovaCategoria) {
     });
 }
 
+// ==========================================
+// MÁSCARA DE MOEDA E LIMPEZA
+// ==========================================
+window.mascaraMoeda = function(input) {
+    let valor = input.value.replace(/\D/g, '');
+    if (valor === '') {
+        input.value = '';
+        return;
+    }
+    valor = (parseInt(valor, 10) / 100).toFixed(2) + '';
+    valor = valor.replace('.', ',');
+    valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    input.value = 'R$ ' + valor;
+};
+
+window.converterMoedaParaNumero = function(valorFormatado) {
+    if (!valorFormatado) return 0;
+    let numeroLimpo = valorFormatado.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+    return parseFloat(numeroLimpo) || 0;
+};
+
+// ==========================================
+// MÁQUINA DO TEMPO (NAVEGAÇÃO POR MESES)
+// ==========================================
+let dataAtualNavegacao = new Date(); // Começa no mês atual em que estamos
+
+const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+window.atualizarDisplayMes = function() {
+    const mes = nomesMeses[dataAtualNavegacao.getMonth()];
+    const ano = dataAtualNavegacao.getFullYear();
+    const display = document.getElementById('display-mes-atual');
+    if (display) display.innerText = `${mes} ${ano}`;
+};
+
+window.mudarMes = function(direcao) {
+    // direcao: -1 (volta um mês) ou 1 (avança um mês)
+    dataAtualNavegacao.setMonth(dataAtualNavegacao.getMonth() + direcao);
+    atualizarDisplayMes();
+    
+    // Zera os filtros avançados de data para não dar conflito
+    const dataInicio = document.getElementById('filtro-data-inicio');
+    const dataFim = document.getElementById('filtro-data-fim');
+    if (dataInicio) dataInicio.value = '';
+    if (dataFim) dataFim.value = '';
+
+    atualizarTela(); // A Mágica: Manda o painel inteiro se redesenhar!
+};
+
+// ==========================================
+// SISTEMA DE PAGINAÇÃO CLÁSSICA COM MEMÓRIA
+// ==========================================
+let paginaAtual = 1;
+// Puxa a preferência do usuário ou define 15 como padrão
+let itensPorPagina = localStorage.getItem('configItensPorPagina') || '15'; 
+
+window.alterarItensPorPagina = function() {
+    const select = document.getElementById('select-itens-pagina');
+    itensPorPagina = select.value;
+    localStorage.setItem('configItensPorPagina', itensPorPagina); // Salva na memória do navegador
+    paginaAtual = 1; // Sempre que muda a quantidade, volta pra página 1
+    atualizarTela();
+};
+
+window.mudarPagina = function(novaPagina) {
+    paginaAtual = novaPagina;
+    atualizarTela();
+    // Dá uma leve rolada para cima na tabela para o usuário continuar lendo
+    document.querySelector('.tabela-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+window.renderizarPaginacao = function(totalItens) {
+    const container = document.getElementById('numeros-paginacao');
+    if (!container) return;
+    
+    // Se escolheu "Todos" ou não tem itens, esconde os números
+    if (itensPorPagina === 'todos' || totalItens === 0) {
+        container.innerHTML = ''; 
+        return;
+    }
+
+    const limite = parseInt(itensPorPagina, 10);
+    const totalPaginas = Math.ceil(totalItens / limite);
+    
+    let html = '';
+    
+    // Botão Voltar (<)
+    html += `<button onclick="mudarPagina(${paginaAtual - 1})" ${paginaAtual === 1 ? 'disabled' : ''} style="padding: 6px 12px; margin: 0 2px; border-radius: 6px; border: none; cursor: ${paginaAtual === 1 ? 'not-allowed' : 'pointer'}; opacity: ${paginaAtual === 1 ? '0.4' : '1'}; background: var(--fundo); color: var(--texto); transition: 0.2s;"><i class="fa-solid fa-chevron-left"></i></button>`;
+
+    // Números Dinâmicos (1, 2, 3...)
+    for (let i = 1; i <= totalPaginas; i++) {
+        const isAtiva = (i === paginaAtual);
+        const corFundo = isAtiva ? 'var(--cor-primaria)' : 'var(--fundo)';
+        const corTexto = isAtiva ? '#fff' : 'var(--texto)';
+        html += `<button onclick="mudarPagina(${i})" style="padding: 6px 12px; margin: 0 2px; border-radius: 6px; border: none; cursor: pointer; background: ${corFundo}; color: ${corTexto}; font-weight: ${isAtiva ? 'bold' : '500'}; transition: 0.2s;">${i}</button>`;
+    }
+
+    // Botão Avançar (>)
+    html += `<button onclick="mudarPagina(${paginaAtual + 1})" ${paginaAtual === totalPaginas ? 'disabled' : ''} style="padding: 6px 12px; margin: 0 2px; border-radius: 6px; border: none; cursor: ${paginaAtual === totalPaginas ? 'not-allowed' : 'pointer'}; opacity: ${paginaAtual === totalPaginas ? '0.4' : '1'}; background: var(--fundo); color: var(--texto); transition: 0.2s;"><i class="fa-solid fa-chevron-right"></i></button>`;
+
+    container.innerHTML = html;
+};
+
+// Faz a caixinha de seleção já nascer com a escolha salva do cliente
+window.addEventListener('DOMContentLoaded', () => {
+    const selectPaginacao = document.getElementById('select-itens-pagina');
+    if (selectPaginacao) selectPaginacao.value = itensPorPagina;
+});
+
+// ==========================================
+// CARROSSEL DE WIDGETS (LINHA & ALERTAS)
+// ==========================================
+let slideAtualWidget = 1;
+let meuGraficoEvolucao = null;
+
+// Função 1: Faz a Seta virar a página do Widget
+window.alternarWidget = function(direcao) {
+    slideAtualWidget += direcao;
+    if (slideAtualWidget > 2) slideAtualWidget = 1; // Se passar do limite, volta pro 1
+    if (slideAtualWidget < 1) slideAtualWidget = 2; // Se voltar antes do 1, vai pro 2
+
+    const slideGrafico = document.getElementById('slide-grafico-linha');
+    const slideAlertas = document.getElementById('slide-alertas');
+    const titulo = document.getElementById('titulo-widget');
+    const ponto1 = document.getElementById('ponto-widget-1');
+    const ponto2 = document.getElementById('ponto-widget-2');
+
+    if (slideAtualWidget === 1) {
+        slideGrafico.style.display = 'block';
+        slideAlertas.style.display = 'none';
+        titulo.innerText = 'Evolução Diária';
+        ponto1.style.background = 'var(--cor-primaria)'; ponto1.style.opacity = '1';
+        ponto2.style.background = 'var(--texto-secundario)'; ponto2.style.opacity = '0.3';
+    } else {
+        slideGrafico.style.display = 'none';
+        slideAlertas.style.display = 'block';
+        titulo.innerText = 'Contas Pendentes';
+        ponto1.style.background = 'var(--texto-secundario)'; ponto1.style.opacity = '0.3';
+        ponto2.style.background = 'var(--cor-alerta)'; ponto2.style.opacity = '1';
+    }
+};
+
+// Função 2: Calcula a matemática do Gráfico e da Lista
+window.atualizarWidgetDinamico = function(listaFiltrada) {
+    const ctx = document.getElementById('graficoEvolucao');
+    const listaAlertasHTML = document.getElementById('lista-alertas-vencimento');
+    if (!ctx || !listaAlertasHTML) return; 
+
+    // --- PARTE A: MATEMÁTICA DO GRÁFICO DE LINHA ---
+    const diasNoMes = new Date(dataAtualNavegacao.getFullYear(), dataAtualNavegacao.getMonth() + 1, 0).getDate();
+    const labelsDias = Array.from({length: diasNoMes}, (_, i) => String(i + 1).padStart(2, '0'));
+    
+    let arrayReceitas = new Array(diasNoMes).fill(0);
+    let arrayDespesas = new Array(diasNoMes).fill(0);
+    let alertasPendentes = [];
+
+    listaFiltrada.forEach(t => {
+        const valor = parseFloat(t.valor) || 0;
+        
+        // 1. Organiza por dia para o gráfico
+        if (t.data && t.status !== 'cancelado') {
+            const diaTransacao = parseInt(t.data.split('-')[2], 10);
+            if (t.tipo === 'receita') arrayReceitas[diaTransacao - 1] += valor;
+            if (t.tipo === 'despesa') arrayDespesas[diaTransacao - 1] += valor;
+        }
+
+        // 2. Separa os Pendentes para a lista
+        if (t.status === 'pendente') alertasPendentes.push(t);
+    });
+
+    // Desenha o Gráfico de Linha
+    if (meuGraficoEvolucao) meuGraficoEvolucao.destroy();
+    meuGraficoEvolucao = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labelsDias,
+            datasets: [
+                { label: 'Receitas', data: arrayReceitas, borderColor: '#00b894', backgroundColor: 'rgba(0, 184, 148, 0.1)', borderWidth: 2, fill: true, tension: 0.4 },
+                { label: 'Despesas', data: arrayDespesas, borderColor: '#ff7675', backgroundColor: 'rgba(255, 118, 117, 0.1)', borderWidth: 2, fill: true, tension: 0.4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: {display: false} }, y: { border: {display: false} } } }
+    });
+
+    // --- PARTE B: DESENHA A LISTA DE ALERTAS ---
+    listaAlertasHTML.innerHTML = '';
+    alertasPendentes.sort((a, b) => (a.data > b.data ? 1 : -1)); // Ordena da data mais velha pra mais nova
+
+    if (alertasPendentes.length === 0) {
+        listaAlertasHTML.innerHTML = '<li style="text-align: center; color: var(--texto-secundario); margin-top: 50px;">Nenhum lançamento pendente neste mês! 🎉</li>';
+    } else {
+        const hoje = getDataHoje();
+        alertasPendentes.forEach(t => {
+            let corBorda = '#0984e3'; // Azul (No Prazo - Futuro)
+            let textoTempo = 'No prazo';
+            
+            if (t.data < hoje) { corBorda = '#ff7675'; textoTempo = 'Atrasado'; } // Vermelho
+            else if (t.data === hoje) { corBorda = '#f39c12'; textoTempo = 'Vence Hoje'; } // Laranja
+
+            const dataBR = t.data.split('-').reverse().join('/');
+            const corValor = t.tipo === 'receita' ? '#00b894' : '#ff7675';
+            
+            listaAlertasHTML.innerHTML += `
+                <li style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 12px 15px; border-radius: 8px; border-left: 4px solid ${corBorda};">
+                    <div>
+                        <div style="color: var(--texto); font-weight: 600; font-size: 13px;">${t.descricao}</div>
+                        <div style="color: var(--texto-secundario); font-size: 11px; margin-top: 3px;">
+                            <i class="fa-regular fa-calendar"></i> ${dataBR} 
+                            <span style="margin-left: 8px; color: ${corBorda}; font-weight: bold; background: ${corBorda}20; padding: 2px 6px; border-radius: 4px;">${textoTempo}</span>
+                        </div>
+                    </div>
+                    <div style="font-weight: 700; color: ${corValor}; font-size: 14px;">${formatarMoedaBR(t.valor)}</div>
+                </li>
+            `;
+        });
+    }
+};
+
+// Dá a partida assim que a tela carrega
+window.addEventListener('DOMContentLoaded', atualizarDisplayMes);
+
 // --- 12. A CHAVE MESTRA: EXPORTANDO FUNÇÕES PARA O HTML ---
 window.toggleTheme = toggleTheme;
 window.definirMeta = definirMeta;
@@ -1550,6 +1833,13 @@ window.abrirModalQR = abrirModalQR;
 window.fecharModalQR = fecharModalQR;
 window.uploadTradicional = uploadTradicional;
 window.removerAnexo = removerAnexo;
+window.mascaraMoeda = mascaraMoeda;
+window.atualizarCorDaConta = atualizarCorDaConta;
+window.atualizarCorDaCaixaDeSelecao = atualizarCorDaCaixaDeSelecao;
+window.mudarMes = mudarMes;
+window.alterarItensPorPagina = alterarItensPorPagina;
+window.mudarPagina = mudarPagina;
+window.alternarWidget = alternarWidget;
 
 // --- 9. INICIA O SISTEMA ---
 atualizarTela();
